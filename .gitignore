@@ -11,6 +11,9 @@
 *.gch
 *.pch
 
+# Clangd cache
+.cache/
+
 # Linker files
 *.ilk
 
