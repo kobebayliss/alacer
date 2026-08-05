@@ -1,8 +1,0 @@
-[
-{
-  "directory": "/Users/kobe/Code/alacer/build",
-  "command": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++  -isystem /opt/local/include -std=gnu++20 -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -o CMakeFiles/alacer.dir/src/main.cpp.o -c /Users/kobe/Code/alacer/src/main.cpp",
-  "file": "/Users/kobe/Code/alacer/src/main.cpp",
-  "output": "CMakeFiles/alacer.dir/src/main.cpp.o"
-}
-]
