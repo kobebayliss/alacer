@@ -1,0 +1,3 @@
+/Users/kobe/Code/alacer/build/CMakeFiles/alacer.dir
+/Users/kobe/Code/alacer/build/CMakeFiles/edit_cache.dir
+/Users/kobe/Code/alacer/build/CMakeFiles/rebuild_cache.dir
