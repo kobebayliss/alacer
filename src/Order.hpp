@@ -1,3 +1,4 @@
+#pragma once
 #include <atomic>
 
 enum Side { BUY, SELL };

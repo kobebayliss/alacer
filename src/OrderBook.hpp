@@ -1,4 +1,4 @@
-#include <iostream>
+#pragma once
 #include <algorithm>
 #include <vector>
 #include <format>
@@ -11,7 +11,7 @@ class OrderBook {
 	prices_map buy_orders;
 	prices_map sell_orders;
 	std::unordered_map<size_t, std::unique_ptr<Order>> orders;
-	void remove_from_price_level(Order* order, PriceLevel& price_level, prices_map& map, prices_map::iterator level_it) {
+	void remove_from_price_level(Order* order, PriceLevel& price_level, prices_map& map, prices_map::iterator level_it) const {
 		if (order->prev) {
 			order->prev->next = order->next;
 		} else {
@@ -52,7 +52,7 @@ public:
 		}
 	}
 	// O(1)
-	std::optional<double> get_top(Side side) {
+	std::optional<double> get_top(Side side) const {
 		if (side == BUY) {
 			if (buy_orders.empty()) {
 				return std::nullopt;
@@ -112,8 +112,8 @@ public:
 		}
 	}
 	// O(log n) - can be made O(1)
-	size_t get_quantity_at_price(double price, Side side) {
-		prices_map& map = (side == BUY) ? buy_orders : sell_orders;
+	size_t get_quantity_at_price(double price, Side side) const {
+		const prices_map& map = (side == BUY) ? buy_orders : sell_orders;
 		auto it = map.find(price);
 		if (it == map.end()) {
 			throw std::invalid_argument(std::format("No orders at price {}", price));
