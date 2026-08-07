@@ -32,7 +32,7 @@ class OrderBook {
 
 public:
 	// O(log n)
-	void place_order(double price, size_t quantity, Side side) {
+	void add_order(double price, size_t quantity, Side side) {
 		std::unique_ptr<Order> order_ptr = std::make_unique<Order>(price, quantity, side, nullptr, nullptr);
 		Order* order = order_ptr.get();
 		orders[order->id] = std::move(order_ptr);
@@ -50,7 +50,6 @@ public:
 			order->prev = tail;
 			price_level.tail = order;
 		}
-		std::cout << "Your order is Order # : " << order->id << std::endl;
 	}
 	// O(1)
 	std::optional<double> get_top(Side side) {

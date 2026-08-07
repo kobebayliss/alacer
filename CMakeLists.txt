@@ -8,9 +8,20 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(cpr REQUIRED)
+find_package(RapidJSON REQUIRED)
 
 add_executable(alacer
     src/main.cpp
 )
 
-target_link_libraries(alacer PRIVATE cpr::cpr)
+target_compile_options(alacer PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+)
+
+target_include_directories(alacer SYSTEM PRIVATE /opt/homebrew/include)
+
+target_link_libraries(alacer PRIVATE 
+	cpr::cpr
+)
