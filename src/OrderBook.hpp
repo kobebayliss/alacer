@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include <vector>
 #include <format>
 #include <stdexcept>
@@ -10,29 +11,27 @@ class OrderBook {
 	prices_map buy_orders;
 	prices_map sell_orders;
 	std::unordered_map<size_t, std::unique_ptr<Order>> orders;
-	void remove_from_price_level(Order* order, PriceLevel& price_level, prices_map& map) {
-		if (order->next != nullptr) {
-			Order* next_order = order->next;
-			if (order->prev != nullptr) {
-				Order* prev_order = order->prev;
-				prev_order->next = next_order;
-				next_order->prev = prev_order;
-			} else {
-				next_order->prev = nullptr;
-				price_level.head = next_order;
-			}
-		} else if (order->prev != nullptr) {
-			Order* prev_order = order->prev;
-			prev_order->next = nullptr;
-			price_level.tail = prev_order;
+	void remove_from_price_level(Order* order, PriceLevel& price_level, prices_map& map, prices_map::iterator level_it) {
+		if (order->prev) {
+			order->prev->next = order->next;
+		} else {
+			price_level.head = order->next;
+		}
+		if (order->next) {
+			order->next->prev = order->prev;
+		} else {
+			price_level.tail = order->prev;
 		}
 		price_level.volume -= order->quantity;
+		order->next = nullptr;
+		order->prev = nullptr;
 		if (price_level.volume == 0) {
-			map.erase(order->price);
+			map.erase(level_it);
 		}
 	}
 
 public:
+	// O(log n)
 	void place_order(double price, size_t quantity, Side side) {
 		std::unique_ptr<Order> order_ptr = std::make_unique<Order>(price, quantity, side, nullptr, nullptr);
 		Order* order = order_ptr.get();
@@ -41,7 +40,7 @@ public:
 		auto it = map.find(price);
 		if (it == map.end()) {
 			// new price level
-			map.emplace(price, PriceLevel(price, quantity, order, order));
+			map.try_emplace(price, price, quantity, order, order);
 		} else {
 			// existing price level
 			PriceLevel& price_level = it->second;
@@ -53,37 +52,56 @@ public:
 		}
 		std::cout << "Your order is Order # : " << order->id << std::endl;
 	}
-	double get_top(Side side) {
+	// O(1)
+	std::optional<double> get_top(Side side) {
 		if (side == BUY) {
+			if (buy_orders.empty()) {
+				return std::nullopt;
+			}
 			return buy_orders.rbegin()->first;
-		} else {
-			return sell_orders.begin()->first;
 		}
+		if (sell_orders.empty()) {
+			return std::nullopt;
+		}
+		return sell_orders.begin()->first;
 	}
+	// O(log n)
 	void cancel_order(size_t id) {
 		auto it = orders.find(id);
+		if (it == orders.end()) return;
 		Order* order = (it->second).get();
 		prices_map& map = (order->side == BUY) ? buy_orders : sell_orders;
-		PriceLevel& price_level = map.find(order->price)->second;
-		remove_from_price_level(order, price_level, map);
-		order->next = nullptr;
-		order->prev = nullptr;
+		auto level_it = map.find(order->price);
+		PriceLevel& price_level = level_it->second;
+		remove_from_price_level(order, price_level, map, level_it);
 		orders.erase(it);
 	}
+	// O(log n)
 	void update_order(size_t id, double new_price, size_t new_quantity) {
-		Order* order = (orders.find(id)->second).get();
-		if (order->price == new_price && order->quantity == new_quantity)
-			return;
+		auto order_it = orders.find(id);
+		if (order_it == orders.end()) return;
+		Order* order = order_it->second.get();
 		prices_map& map = (order->side == BUY) ? buy_orders : sell_orders;
-		PriceLevel& old_price_level = map.find(order->price)->second;
-		remove_from_price_level(order, old_price_level, map);
+		if (order->price == new_price) {
+			if (order->quantity == new_quantity) return;
+			PriceLevel& price_level = map.find(order->price)->second;
+			price_level.volume -= order->quantity;
+			price_level.volume += new_quantity;
+			order->quantity = new_quantity;
+			return;
+		}
+
+		auto old_it = map.find(order->price);
+		PriceLevel& old_price_level = old_it->second;
+		remove_from_price_level(order, old_price_level, map, old_it);
 		order->price = new_price;
 		order->quantity = new_quantity;
 		auto it = map.find(new_price);
+
 		if (it == map.end()) {
 			order->prev = nullptr;
 			order->next = nullptr;
-			map.emplace(new_price, PriceLevel(new_price, new_quantity, order, order));
+			map.try_emplace(new_price, new_price, new_quantity, order, order);
 		} else {
 			PriceLevel& new_price_level = it->second;
 			new_price_level.volume += new_quantity;
@@ -94,6 +112,7 @@ public:
 			new_price_level.tail = order;
 		}
 	}
+	// O(log n) - can be made O(1)
 	size_t get_quantity_at_price(double price, Side side) {
 		prices_map& map = (side == BUY) ? buy_orders : sell_orders;
 		auto it = map.find(price);
@@ -102,21 +121,26 @@ public:
 		}
 		return it->second.volume;
 	}
-	std::vector<double> get_top_k_prices(int k, Side side) {
+	// O(k)
+	std::vector<double> get_top_k_prices(size_t k, Side side) {
 		prices_map& map = (side == BUY) ? buy_orders : sell_orders;
-		std::vector<double> top_k_prices;
+		std::vector<double> result;
+		result.reserve(k);
+		k = std::min(k, map.size());
 		if (side == BUY) {
-			auto end = std::next(map.rbegin(), k);
-			for (auto it = map.rbegin(); it != end; ++it) {
-				top_k_prices.push_back(it->first);
+			auto it = map.rbegin();
+			while (k--) {
+				result.push_back(it->first);
+				it++;
 			}
-		} else if (side == SELL) {
-			auto end = std::next(map.begin(), k);
-			for (auto it = map.begin(); it != end; ++it) {
-				top_k_prices.push_back(it->first);
+		} else {
+			auto it = map.begin();
+			while (k--) {
+				result.push_back(it->first);
+				it++;
 			}
 		}
-		return top_k_prices;
+		return result;
 	}
 };
 
