@@ -32,7 +32,7 @@ class OrderBook {
 
 public:
 	// O(log n)
-	void add_order(double price, size_t quantity, Side side) {
+	void add_order(double price, double quantity, Side side) {
 		std::unique_ptr<Order> order_ptr = std::make_unique<Order>(price, quantity, side, nullptr, nullptr);
 		Order* order = order_ptr.get();
 		orders[order->id] = std::move(order_ptr);
@@ -76,7 +76,7 @@ public:
 		orders.erase(it);
 	}
 	// O(log n)
-	void update_order(size_t id, double new_price, size_t new_quantity) {
+	void update_order(size_t id, double new_price, double new_quantity) {
 		auto order_it = orders.find(id);
 		if (order_it == orders.end()) return;
 		Order* order = order_it->second.get();
@@ -112,7 +112,7 @@ public:
 		}
 	}
 	// O(log n) - can be made O(1)
-	size_t get_quantity_at_price(double price, Side side) const {
+	double get_quantity_at_price(double price, Side side) const {
 		const prices_map& map = (side == BUY) ? buy_orders : sell_orders;
 		auto it = map.find(price);
 		if (it == map.end()) {
@@ -140,6 +140,13 @@ public:
 			}
 		}
 		return result;
+	}
+	// getters
+	prices_map getBuyOrders() const {
+		return buy_orders;
+	}
+	prices_map getSellOrders() const {
+		return sell_orders;
 	}
 };
 

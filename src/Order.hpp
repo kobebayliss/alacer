@@ -7,13 +7,13 @@ struct Order {
 	inline static std::atomic<size_t> next_id = 1;
 	size_t id;
 	double price;
-	size_t quantity;
+	double quantity;
 	Side side;
 	Order* next;
 	Order* prev;
 
 public:
-	Order(double price, size_t quantity, Side side, Order* next, Order* prev) {
+	Order(double price, double quantity, Side side, Order* next, Order* prev) {
 		this->id = next_id++;
 		this->price = price;
 		this->quantity = quantity;
