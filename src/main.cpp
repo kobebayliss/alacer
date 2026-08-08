@@ -4,7 +4,7 @@
 #include "OrderBookBuilder.hpp"
 
 int main() {
-	OrderBook ob = build_initial_orderbook();
+	OrderBook ob = build_initial_orderbook("BTCUSDT", 100);
 	const size_t x = 16;
 	std::vector<double> top_x = ob.get_top_k_prices(x, BUY);
 	for (size_t i{0}; i < x; i++) {

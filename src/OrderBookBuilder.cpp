@@ -8,13 +8,13 @@ void add_to_orderbook(OrderBook& ob, const auto& orders, Side side) {
 	}
 }
 
-OrderBook build_initial_orderbook() {
+OrderBook build_initial_orderbook(const std::string& symbol, size_t depth) {
 	OrderBook ob;
 	cpr::Response r = cpr::Get(
 		cpr::Url{"https://testnet.binance.vision/api/v3/depth"},
 		cpr::Parameters{
-			{"symbol", "BTCUSDT"},
-			{"limit", "100"}
+			{"symbol", symbol},
+			{"limit", std::to_string(depth)}
 		}
 	);
 	rapidjson::Document document;
