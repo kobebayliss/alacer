@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include <utility>
 #include <vector>
 #include <format>
 #include <stdexcept>
@@ -52,17 +53,13 @@ public:
 		}
 	}
 	// O(1)
-	std::optional<double> get_top(Side side) const {
+	std::pair<double, double> get_top_level(Side side) const {
 		if (side == BUY) {
-			if (buy_orders.empty()) {
-				return std::nullopt;
-			}
-			return buy_orders.rbegin()->first;
+			auto it = buy_orders.rbegin();
+			return {it->first, it->second.volume};
 		}
-		if (sell_orders.empty()) {
-			return std::nullopt;
-		}
-		return sell_orders.begin()->first;
+		auto it = sell_orders.begin();
+		return {it->first, it->second.volume};
 	}
 	// O(log n)
 	void cancel_order(size_t id) {
@@ -121,31 +118,31 @@ public:
 		return it->second.volume;
 	}
 	// O(k)
-	std::vector<double> get_top_k_prices(size_t k, Side side) {
-		prices_map& map = (side == BUY) ? buy_orders : sell_orders;
-		std::vector<double> result;
-		result.reserve(k);
+	std::vector<std::pair<double, double>> get_top_k_levels(size_t k, Side side) const { // returns pairs of price, quantity of top k levels
+		const prices_map& map = (side == BUY) ? buy_orders : sell_orders;
 		k = std::min(k, map.size());
+		std::vector<std::pair<double, double>> result;
+		result.reserve(k);
 		if (side == BUY) {
 			auto it = map.rbegin();
 			while (k--) {
-				result.push_back(it->first);
+				result.emplace_back(it->first, it->second.volume);
 				it++;
 			}
 		} else {
 			auto it = map.begin();
 			while (k--) {
-				result.push_back(it->first);
+				result.emplace_back(it->first, it->second.volume);
 				it++;
 			}
 		}
 		return result;
 	}
 	// getters
-	prices_map getBuyOrders() const {
+	const prices_map& getBuyOrders() const {
 		return buy_orders;
 	}
-	prices_map getSellOrders() const {
+	const prices_map& getSellOrders() const {
 		return sell_orders;
 	}
 };

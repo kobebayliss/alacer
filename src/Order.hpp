@@ -25,12 +25,12 @@ public:
 
 struct PriceLevel {
 	double price;
-	size_t volume;
+	double volume;
 	Order* head;
 	Order* tail;
 
 public:
-	PriceLevel(double price, size_t volume, Order* head, Order* tail) {
+	PriceLevel(double price, double volume, Order* head, Order* tail) {
 		this->price = price;
 		this->volume = volume;
 		this->head = head;
