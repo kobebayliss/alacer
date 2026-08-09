@@ -12,6 +12,7 @@ find_package(RapidJSON REQUIRED)
 
 add_executable(alacer
     src/main.cpp
+    src/OrderBook.cpp
     src/OrderBookBuilder.cpp
     src/OrderBookDisplay.cpp
 )

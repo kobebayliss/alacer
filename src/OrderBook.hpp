@@ -1,85 +1,28 @@
 #pragma once
-#include <algorithm>
-#include <utility>
-#include <vector>
-#include <format>
-#include <stdexcept>
-#include <map>
 #include "PriceLevel.hpp"
+#include <vector>
+#include <map>
 
 typedef std::map<double, PriceLevel> prices_map;
+
 class OrderBook {
 	prices_map buy_orders;
 	prices_map sell_orders;
 
 public:
 	// O(log n)
-	void apply_delta(double price, double volume, Side side) {
-		prices_map& map = (side == BUY) ? buy_orders : sell_orders;
-		auto it = map.find(price);
-		if (volume == 0.0) {
-			if (it != map.end()) {
-				map.erase(it);
-			}
-			return;
-		}
-		if (it == map.end()) {
-			// new price level
-			map.try_emplace(price, price, volume);
-		} else {
-			// existing price level
-			it->second.volume = volume;
-		}
-	}
+	void apply_delta(double price, double quantity, Side side);
 
 	// O(1)
-	std::pair<double, double> get_top_level(Side side) const {
-		if (side == BUY) {
-			auto it = buy_orders.rbegin();
-			return {it->first, it->second.volume};
-		}
-		auto it = sell_orders.begin();
-		return {it->first, it->second.volume};
-	}
-
-	// O(log n) - can be made O(1)
-	double get_volume_at_price(double price, Side side) const {
-		const prices_map& map = (side == BUY) ? buy_orders : sell_orders;
-		auto it = map.find(price);
-		if (it == map.end()) {
-			throw std::invalid_argument(std::format("No orders at price {}", price));
-		}
-		return it->second.volume;
-	}
+	std::pair<double, double> get_top_level(Side side) const;
 
 	// O(k)
-	std::vector<std::pair<double, double>> get_top_k_levels(size_t k, Side side) const { // returns pairs of price, quantity of top k levels
-		const prices_map& map = (side == BUY) ? buy_orders : sell_orders;
-		k = std::min(k, map.size());
-		std::vector<std::pair<double, double>> result;
-		result.reserve(k);
-		if (side == BUY) {
-			auto it = map.rbegin();
-			while (k--) {
-				result.emplace_back(it->first, it->second.volume);
-				it++;
-			}
-		} else {
-			auto it = map.begin();
-			while (k--) {
-				result.emplace_back(it->first, it->second.volume);
-				it++;
-			}
-		}
-		return result;
-	}
+	std::vector<std::pair<double, double>> get_top_k_levels(size_t k, Side side) const;
 
-	// getters
-	const prices_map& getBuyOrders() const {
-		return buy_orders;
-	}
-	const prices_map& getSellOrders() const {
-		return sell_orders;
-	}
+	// O(log n) - can be made O(1)
+	double get_volume_at_price(double price, Side side) const;
+
+	// getters - both O(1)
+	const prices_map& getBuyOrders() const;
+	const prices_map& getSellOrders() const;
 };
-
