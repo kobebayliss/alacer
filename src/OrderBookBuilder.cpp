@@ -4,7 +4,7 @@
 
 void add_to_orderbook(OrderBook& ob, const auto& orders, Side side) {
 	for (const auto& order : orders.GetArray()) {
-		ob.add_order(std::stod(order[0].GetString()), std::stod(order[1].GetString()), side);
+		ob.apply_delta(std::stod(order[0].GetString()), std::stod(order[1].GetString()), side);
 	}
 }
 
