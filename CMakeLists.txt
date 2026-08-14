@@ -7,24 +7,35 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(cpr REQUIRED)
-find_package(RapidJSON REQUIRED)
+include(FetchContent)
 
-add_executable(alacer
-    src/main.cpp
-    src/OrderBook.cpp
-    src/OrderBookBuilder.cpp
-    src/OrderBookDisplay.cpp
+FetchContent_Declare(
+    ixwebsocket
+    GIT_REPOSITORY https://github.com/machinezone/IXWebSocket.git
+    GIT_TAG        v11.4.5
 )
 
+set(USE_TLS ON CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(ixwebsocket)
+
+find_package(cpr REQUIRED)
+find_package(RapidJSON REQUIRED)
+add_executable(alacer
+    src/main.cpp
+    src/book/OrderBook.cpp
+    src/book/OrderBookBuilder.cpp
+    src/book/OrderBookDisplay.cpp
+    stc/feed/WebSocketClient.cpp
+)
+target_include_directories(alacer PRIVATE /opt/homebrew/include)
 target_compile_options(alacer PRIVATE
     -Wall
     -Wextra
     -Wpedantic
 )
 
-target_include_directories(alacer SYSTEM PRIVATE /opt/homebrew/include)
-
 target_link_libraries(alacer PRIVATE 
 	cpr::cpr
+	ixwebsocket
 )
