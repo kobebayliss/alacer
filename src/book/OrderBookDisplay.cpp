@@ -1,5 +1,6 @@
 #include "OrderBookDisplay.hpp"
 #include <iostream>
+#include <format>
 
 namespace {
 	constexpr int PRICE_WIDTH = 12;

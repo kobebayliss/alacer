@@ -26,7 +26,7 @@ add_executable(alacer
     src/book/OrderBook.cpp
     src/book/OrderBookBuilder.cpp
     src/book/OrderBookDisplay.cpp
-    stc/feed/WebSocketClient.cpp
+    src/feed/WebSocketClient.cpp
 )
 target_include_directories(alacer PRIVATE /opt/homebrew/include)
 target_compile_options(alacer PRIVATE
