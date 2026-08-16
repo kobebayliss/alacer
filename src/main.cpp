@@ -36,5 +36,4 @@ int main() {
 	std::cin.get();
 	webSocket.stop();
 	return 0;
-	return 0;
 }
