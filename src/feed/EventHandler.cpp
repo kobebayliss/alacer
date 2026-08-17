@@ -9,19 +9,19 @@ namespace EventHandler {
 			raw.length = std::min(msg->str.size(), sizeof(raw.data));
 			std::memcpy(raw.data, msg->str.data(), raw.length);
 			if (!queue.try_push(raw)) {
-				std::cout << "QUEUE FULL: DROPPING MESSAGE." << std::endl;
+				std::cout << "QUEUE FULL: DROPPING MESSAGE.\n";
 			} else {
-				std::cout << "MESSAGED INSERTED TO QUEUE." << std::endl;
+				std::cout << "MESSAGED INSERTED TO QUEUE.\n";
 			}
 
 		}
 		else if (msg->type == ix::WebSocketMessageType::Open)
 		{
-			std::cout << "Connection established" << std::endl;
+			std::cout << "Connection established\n";
 		}
 		else if (msg->type == ix::WebSocketMessageType::Error)
 		{
-			std::cout << "Connection error: " << msg->errorInfo.reason << std::endl;
+			std::cout << "Connection error: " << msg->errorInfo.reason << '\n';
 		}
 	}
 }

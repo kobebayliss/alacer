@@ -1,6 +1,8 @@
 #include "OrderBookDisplay.hpp"
 #include <iostream>
 #include <format>
+#include <chrono>
+#include <thread>
 
 namespace {
 	constexpr int PRICE_WIDTH = 12;
@@ -22,11 +24,19 @@ namespace {
 }
 
 namespace OrderBookDisplay {
-	void print(const OrderBook& ob, size_t depth) {
-		std::vector<std::pair<double, double>> bids = ob.get_top_k_levels(depth, BUY);
-		std::vector<std::pair<double, double>> asks = ob.get_top_k_levels(depth, SELL);
+	const uint64_t DEPTH = 20;
+	void printLoop(const OrderBook& ob, std::atomic<bool>& running) {
+		while (running) {
+			std::cout << "\033[H\033[J";
+			print(ob);
+			std::this_thread::sleep_for(std::chrono::seconds(1));
+		}
+	}
+	void print(const OrderBook& ob) {
+		std::vector<std::pair<double, double>> bids = ob.get_top_k_levels(DEPTH, BUY);
+		std::vector<std::pair<double, double>> asks = ob.get_top_k_levels(DEPTH, SELL);
 		std::string ob_display;
-		for (size_t i = 0; i < depth; i++) {
+		for (size_t i = 0; i < DEPTH; i++) {
 			ob_display = ob_display + formatLine(bids[i].first, bids[i].second, asks[i].first, asks[i].second);
 		}
 

@@ -28,6 +28,7 @@ add_executable(alacer
     src/book/OrderBookDisplay.cpp
     src/feed/WebSocketClient.cpp
     src/feed/EventHandler.cpp
+    src/feed/BookUpdater.cpp
 )
 target_include_directories(alacer PRIVATE /opt/homebrew/include)
 target_compile_options(alacer PRIVATE

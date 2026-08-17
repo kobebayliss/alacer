@@ -1,12 +1,7 @@
 #include "OrderBookBuilder.hpp"
 #include <cpr/cpr.h>
 #include <rapidjson/document.h>
-
-void add_to_orderbook(OrderBook& ob, const auto& orders, Side side) {
-	for (const auto& order : orders.GetArray()) {
-		ob.apply_delta(std::stod(order[0].GetString()), std::stod(order[1].GetString()), side);
-	}
-}
+#include "../feed/BookUpdater.hpp"
 
 OrderBook build_initial_orderbook(const std::string& symbol, size_t depth) {
 	OrderBook ob;

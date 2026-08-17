@@ -1,7 +1,9 @@
 #pragma once
 #include "OrderBook.hpp"
+#include <atomic>
 
 namespace OrderBookDisplay {
-	void print(const OrderBook& ob, size_t depth = 20);
+	void printLoop(const OrderBook& ob, std::atomic<bool>& running);
+	void print(const OrderBook& ob);
 	void printTopOfBook(const OrderBook& ob);
 }

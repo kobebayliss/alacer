@@ -4,6 +4,7 @@
 #include <optional>
 #include <bit>
 
+// custom torus queue from https://github.com/kobebayliss/torus
 template<typename T, uint64_t capacity>
 class SPSCQueue {
 	static_assert(std::is_trivially_copyable_v<T>, "SPSCQueue requires trivially copyable object");
