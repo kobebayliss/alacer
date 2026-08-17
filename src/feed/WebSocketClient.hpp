@@ -4,10 +4,12 @@
 
 class WebSocketClient {
 	ix::WebSocket webSocket;
+	void setOnMessage();
+	void start();
+	void stop();
 public:
 	explicit WebSocketClient(const std::string& url);
 	~WebSocketClient();
-	void setOnMessage(auto callback);
-	void start();
-	void stop();
+	void openConnection();
+	void closeConnection();
 };
