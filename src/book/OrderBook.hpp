@@ -6,6 +6,7 @@
 typedef std::map<double, PriceLevel> prices_map;
 
 class OrderBook {
+	mutable std::mutex mtx;
 	prices_map buy_orders;
 	prices_map sell_orders;
 
@@ -21,8 +22,4 @@ public:
 
 	// O(log n) - can be made O(1)
 	double get_volume_at_price(double price, Side side) const;
-
-	// getters - both O(1)
-	const prices_map& getBuyOrders() const;
-	const prices_map& getSellOrders() const;
 };

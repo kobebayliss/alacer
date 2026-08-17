@@ -1,9 +1,11 @@
 #include <format>
+#include <mutex>
 #include <stdexcept>
 #include "OrderBook.hpp"
 
 void OrderBook::apply_delta(double price, double volume, Side side) {
 	prices_map& map = (side == BUY) ? buy_orders : sell_orders;
+	std::lock_guard<std::mutex> lock(mtx);
 	auto it = map.find(price);
 	if (volume == 0.0) {
 		if (it != map.end()) {
@@ -21,6 +23,7 @@ void OrderBook::apply_delta(double price, double volume, Side side) {
 }
 
 std::pair<double, double> OrderBook::get_top_level(Side side) const {
+	std::lock_guard<std::mutex> lock(mtx);
 	if (side == BUY) {
 		auto it = buy_orders.rbegin();
 		return {it->first, it->second.volume};
@@ -31,8 +34,9 @@ std::pair<double, double> OrderBook::get_top_level(Side side) const {
 
 std::vector<std::pair<double, double>> OrderBook::get_top_k_levels(size_t k, Side side) const {
 	const prices_map& map = (side == BUY) ? buy_orders : sell_orders;
-	k = std::min(k, map.size());
 	std::vector<std::pair<double, double>> result;
+	std::lock_guard<std::mutex> lock(mtx);
+	k = std::min(k, map.size());
 	result.reserve(k);
 	if (side == BUY) {
 		auto it = map.rbegin();
@@ -52,16 +56,10 @@ std::vector<std::pair<double, double>> OrderBook::get_top_k_levels(size_t k, Sid
 
 double OrderBook::get_volume_at_price(double price, Side side) const {
 	const prices_map& map = (side == BUY) ? buy_orders : sell_orders;
+	std::lock_guard<std::mutex> lock(mtx);
 	auto it = map.find(price);
 	if (it == map.end()) {
 		throw std::invalid_argument(std::format("No orders at price {}", price));
 	}
 	return it->second.volume;
-}
-
-const prices_map& OrderBook::getBuyOrders() const {
-	return buy_orders;
-}
-const prices_map& OrderBook::getSellOrders() const {
-	return sell_orders;
 }
