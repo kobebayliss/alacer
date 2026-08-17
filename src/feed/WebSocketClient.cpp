@@ -1,24 +1,8 @@
 #include "WebSocketClient.hpp"
-#include <iostream>
 
-void WebSocketClient::setOnMessage() {
-	webSocket.setOnMessageCallback([](const ix::WebSocketMessagePtr& msg)
-	{
-		if (msg->type == ix::WebSocketMessageType::Message)
-		{
-			std::cout << "received message: " << msg->str << std::endl;
-			std::cout << "> " << std::flush;
-		}
-		else if (msg->type == ix::WebSocketMessageType::Open)
-		{
-			std::cout << "Connection established" << std::endl;
-			std::cout << "> " << std::flush;
-		}
-		else if (msg->type == ix::WebSocketMessageType::Error)
-		{
-			std::cout << "Connection error: " << msg->errorInfo.reason << std::endl;
-			std::cout << "> " << std::flush;
-		}
+void WebSocketClient::setOnMessage(SPSCQueue<RawMessage, CAPACITY>& queue) {
+	webSocket.setOnMessageCallback([&queue](const ix::WebSocketMessagePtr& msg) {
+		EventHandler::handleMessage(msg, queue);
 	});
 }
 void WebSocketClient::start() {
@@ -33,8 +17,8 @@ WebSocketClient::WebSocketClient(const std::string& url) {
 WebSocketClient::~WebSocketClient() {
 	webSocket.stop();
 }
-void WebSocketClient::openConnection() {
-	this->setOnMessage();
+void WebSocketClient::openConnection(SPSCQueue<RawMessage, CAPACITY>& queue) {
+	this->setOnMessage(queue);
 	this->start();
 }
 void WebSocketClient::closeConnection() {

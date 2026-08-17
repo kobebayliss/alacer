@@ -11,7 +11,8 @@ int main() {
 	OrderBookDisplay::print(ob);
 	OrderBookDisplay::printTopOfBook(ob);
 	WebSocketClient ws("wss://stream.testnet.binance.vision/ws/btcusdt@depth@100ms");
-	ws.openConnection();
+	SPSCQueue<RawMessage, CAPACITY> queue{};
+	ws.openConnection(queue);
 	std::cin.get();
 	ws.closeConnection();
 	return 0;
