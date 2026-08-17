@@ -1,5 +1,6 @@
 #include "EventHandler.hpp"
 #include <iostream>
+#include <memory.h>
 
 namespace EventHandler {
 	void handleMessage(const ix::WebSocketMessagePtr &msg, SPSCQueue<RawMessage, CAPACITY>& queue) {
@@ -7,13 +8,10 @@ namespace EventHandler {
 		{
 			RawMessage raw{};
 			raw.length = std::min(msg->str.size(), sizeof(raw.data));
-			std::memcpy(raw.data, msg->str.data(), raw.length);
+			memcpy(raw.data, msg->str.data(), raw.length);
 			if (!queue.try_push(raw)) {
 				std::cout << "QUEUE FULL: DROPPING MESSAGE.\n";
-			} else {
-				std::cout << "MESSAGED INSERTED TO QUEUE.\n";
 			}
-
 		}
 		else if (msg->type == ix::WebSocketMessageType::Open)
 		{

@@ -13,7 +13,6 @@ void bookUpdater(SPSCQueue<RawMessage, CAPACITY> &queue, OrderBook &ob, std::ato
 		}
 		add_to_orderbook(ob, document["b"], BUY);
 		add_to_orderbook(ob, document["a"], SELL);
-		std::cout << "MESSAGE READ FROM QUEUE. \n";
 	}
 }
 
