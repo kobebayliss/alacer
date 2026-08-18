@@ -57,14 +57,17 @@ void OrderBook::apply_delta(double price, double volume, Side side) {
 	}
 }
 
-std::pair<double, double> OrderBook::get_top_level(Side side) const {
+std::optional<std::pair<double, double>> OrderBook::get_top_level(Side side) const {
 	std::lock_guard lock(mtx);
 	if (side == BUY) {
+		if (buy_orders.empty()) return std::nullopt;
 		auto it = buy_orders.rbegin();
-		return {it->first, it->second.volume};
+		return std::make_pair(it->first, it->second.volume);
+	} else {
+		if (sell_orders.empty()) return std::nullopt;
+		auto it = sell_orders.begin();
+		return std::make_pair(it->first, it->second.volume);
 	}
-	auto it = sell_orders.begin();
-	return {it->first, it->second.volume};
 }
 
 std::vector<std::pair<double, double>> OrderBook::get_top_k_levels(size_t k, Side side) const {

@@ -45,9 +45,9 @@ namespace OrderBookDisplay {
 		std::cout << ob_display;
 	}
 	void printTopOfBook(const OrderBook& ob) {
-		std::pair<double, double> bid = ob.get_top_level(BUY);
-		std::pair<double, double> ask = ob.get_top_level(SELL);
-		std::string top_display = formatLine(bid.first, bid.second, ask.first, ask.second);
+		auto bid = ob.get_top_level(BUY);
+		auto ask = ob.get_top_level(SELL);
+		std::string top_display = formatLine(bid->first, bid->second, ask->first, ask->second);
 
 		std::cout << formatHeader();
 		std::cout << top_display;

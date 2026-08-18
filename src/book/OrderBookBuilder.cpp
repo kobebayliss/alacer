@@ -1,11 +1,12 @@
 #include "OrderBookBuilder.hpp"
 #include <cpr/cpr.h>
 #include <rapidjson/document.h>
+#include <iostream>
 #include "../feed/BookUpdater.hpp"
 
 void build_initial_orderbook(OrderBook& ob, size_t depth) {
 	cpr::Response r = cpr::Get(
-		cpr::Url{"https://testnet.binance.vision/api/v3/depth"},
+		cpr::Url{"https://api.binance.com/api/v3/depth"},
 		cpr::Parameters{
 			{"symbol", ob.instrument},
 			{"limit", std::to_string(depth)}
@@ -13,6 +14,10 @@ void build_initial_orderbook(OrderBook& ob, size_t depth) {
 	);
 	rapidjson::Document document;
 	document.Parse(r.text.c_str());
+	if (document.HasParseError() || !document.HasMember("bids") || !document.HasMember("asks")) {
+		std::cout << "FAILED TO BUILD ORDER BOOK: " << r.text << '\n';
+		return;
+	}
 	add_to_orderbook(ob, document["bids"], BUY);
 	add_to_orderbook(ob, document["asks"], SELL);
 }

@@ -26,7 +26,7 @@ public:
 	void apply_delta(double price, double quantity, Side side);
 
 	// O(1)
-	std::pair<double, double> get_top_level(Side side) const;
+	std::optional<std::pair<double, double>> get_top_level(Side side) const;
 
 	// O(k)
 	std::vector<std::pair<double, double>> get_top_k_levels(size_t k, Side side) const;
