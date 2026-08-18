@@ -3,6 +3,7 @@
 #include <new>
 #include <optional>
 #include <bit>
+#include <memory>
 
 // custom torus queue from https://github.com/kobebayliss/torus
 template<typename T, uint64_t capacity>

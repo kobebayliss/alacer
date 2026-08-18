@@ -3,11 +3,11 @@
 #include <rapidjson/document.h>
 #include "../feed/BookUpdater.hpp"
 
-void build_initial_orderbook(OrderBook& ob, const std::string& symbol, size_t depth) {
+void build_initial_orderbook(OrderBook& ob, size_t depth) {
 	cpr::Response r = cpr::Get(
 		cpr::Url{"https://testnet.binance.vision/api/v3/depth"},
 		cpr::Parameters{
-			{"symbol", symbol},
+			{"symbol", ob.instrument},
 			{"limit", std::to_string(depth)}
 		}
 	);

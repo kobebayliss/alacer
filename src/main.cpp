@@ -10,8 +10,8 @@
 #include "feed/BookUpdater.hpp"
 
 int main() {
-	OrderBook ob;
-	build_initial_orderbook(ob, "BTCUSDT", 100);
+	OrderBook ob{"BTCUSDT"};
+	build_initial_orderbook(ob, 100);
 	WebSocketClient ws("wss://stream.testnet.binance.vision/ws/btcusdt@depth@100ms");
 	SPSCQueue<RawMessage, CAPACITY> queue{};
 	std::atomic<bool> running = true;
