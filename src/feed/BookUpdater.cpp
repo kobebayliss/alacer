@@ -16,7 +16,7 @@ void bookUpdater(SPSCQueue<RawMessage, CAPACITY> &queue, OrderBook &ob, std::ato
 		}
 		int64_t U = document["U"].GetInt64();
 		int64_t u = document["u"].GetInt64();
-		if (U != last_applied_update + 1 && last_applied_update != 0) {
+		if (U != last_applied_update + 1 && last_applied_update != -1) {
 			std::cout << "GAP DETECTED: expected U = " << last_applied_update + 1 << ", got U = " << U << '\n';
 			// rebuild book - out of sync
 			ob.clear();
