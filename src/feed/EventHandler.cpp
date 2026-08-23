@@ -1,10 +1,11 @@
 #include "EventHandler.hpp"
+#include <atomic>
 #include <memory.h>
 #include <iostream>
 #include <fstream>
 
 namespace EventHandler {
-	void handleMessage(const ix::WebSocketMessagePtr &msg, SPSCQueue<RawMessage, CAPACITY>& queue, std::ofstream& outputFile) {
+	void handleMessage(const ix::WebSocketMessagePtr &msg, SPSCQueue<RawMessage, CAPACITY>& queue, std::ofstream& outputFile, std::atomic<bool>& connected, uint64_t& produced) {
 		if (msg->type == ix::WebSocketMessageType::Message)
 		{
 			outputFile << msg->str.data() << '\n';
@@ -14,10 +15,12 @@ namespace EventHandler {
 			if (!queue.try_push(raw)) {
 				std::cout << "QUEUE FULL: DROPPING MESSAGE.\n";
 			}
+			++produced;
 		}
 		else if (msg->type == ix::WebSocketMessageType::Open)
 		{
 			std::cout << "Connection established\n";
+			connected.store(true, std::memory_order_release);
 		}
 		else if (msg->type == ix::WebSocketMessageType::Error)
 		{
