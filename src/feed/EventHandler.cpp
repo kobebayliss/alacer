@@ -1,6 +1,6 @@
 #include "EventHandler.hpp"
-#include <iostream>
 #include <memory.h>
+#include <iostream>
 #include <fstream>
 
 namespace EventHandler {
@@ -8,7 +8,6 @@ namespace EventHandler {
 		if (msg->type == ix::WebSocketMessageType::Message)
 		{
 			outputFile << msg->str.data() << '\n';
-			std::cout << "Written successfully\n";
 			RawMessage raw{};
 			raw.length = std::min(msg->str.size(), sizeof(raw.data));
 			memcpy(raw.data, msg->str.data(), raw.length);
