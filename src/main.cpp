@@ -12,7 +12,7 @@
 int main() {
 	OrderBook ob{"BTCUSDT"};
 	build_initial_orderbook(ob, 100);
-	WebSocketClient ws("wss://stream.binance.com:9443/ws/btcusdt@depth@100ms");
+ 	WebSocketClient ws("wss://stream.binance.com:9443/ws/btcusdt@depth@100ms");
 	SPSCQueue<RawMessage, CAPACITY> queue{};
 	std::atomic<bool> running = true;
 

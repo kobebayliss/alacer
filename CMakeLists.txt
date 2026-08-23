@@ -35,6 +35,7 @@ target_compile_options(alacer PRIVATE
     -Wall
     -Wextra
     -Wpedantic
+    -Wno-deprecated-declarations
 )
 
 target_link_libraries(alacer PRIVATE 

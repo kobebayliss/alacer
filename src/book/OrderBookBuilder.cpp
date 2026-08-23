@@ -3,8 +3,13 @@
 #include <rapidjson/document.h>
 #include <iostream>
 #include "../feed/BookUpdater.hpp"
+#include <fstream>
 
 void build_initial_orderbook(OrderBook& ob, size_t depth) {
+	std::ofstream outputFile("data/book.json");
+	if (!outputFile.is_open()) {
+		std::cerr << "Error: Could not open the file!" << std::endl;
+	}
 	cpr::Response r = cpr::Get(
 		cpr::Url{"https://api.binance.com/api/v3/depth"},
 		cpr::Parameters{
@@ -12,8 +17,11 @@ void build_initial_orderbook(OrderBook& ob, size_t depth) {
 			{"limit", std::to_string(depth)}
 		}
 	);
+	outputFile << r.text;
+	outputFile.close();
 	rapidjson::Document document;
 	document.Parse(r.text.c_str());
+
 	if (document.HasParseError() || !document.HasMember("bids") || !document.HasMember("asks")) {
 		std::cout << "FAILED TO BUILD ORDER BOOK: " << r.text << '\n';
 		return;

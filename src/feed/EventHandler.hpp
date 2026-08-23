@@ -10,5 +10,5 @@ struct RawMessage {
 };
 
 namespace EventHandler {
-	void handleMessage(const ix::WebSocketMessagePtr& msg, SPSCQueue<RawMessage, CAPACITY>& queue);
+	void handleMessage(const ix::WebSocketMessagePtr& msg, SPSCQueue<RawMessage, CAPACITY>& queue, std::ofstream& outputFile);
 }
