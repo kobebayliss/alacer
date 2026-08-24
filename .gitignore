@@ -1,6 +1,9 @@
 # Prerequisites
 *.d
 
+# Dataset files
+data/
+
 # Compiled Object files
 *.slo
 *.lo
@@ -45,6 +48,7 @@
 # Build directories
 build/
 Build/
+build-asan/
 build-*/
 
 # CMake generated files

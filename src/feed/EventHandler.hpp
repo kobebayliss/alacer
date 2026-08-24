@@ -5,7 +5,7 @@
 const uint64_t CAPACITY = 4096;
 
 struct RawMessage {
-	char data[16384];
+	char data[131072];
 	uint64_t length;
 };
 
