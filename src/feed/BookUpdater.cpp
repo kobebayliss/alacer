@@ -3,29 +3,33 @@
 #include <iostream>
 #include <sys/types.h>
 
-void bookUpdater(SPSCQueue<RawMessage, CAPACITY> &queue, OrderBook &ob, std::atomic<bool> &running) {
-	int64_t last_applied_update = -1;
+uint64_t bookUpdater(SPSCQueue<RawMessage, CAPACITY> &queue, OrderBook &ob, std::atomic<bool> &running, uint64_t last_update_id) {
+	uint64_t consumed = 0;
 	while (running) {
 		auto raw = queue.try_pop();
 		if (!raw) continue;  // queue is empty
+		++consumed;
 		rapidjson::Document document;
 		document.Parse(raw->data, raw->length);
 		if (document.HasParseError()) {
 			std::cout << "parse error\n";
 			continue;
 		}
-		int64_t U = document["U"].GetInt64();
-		int64_t u = document["u"].GetInt64();
-		if (U != last_applied_update + 1 && last_applied_update != -1) {
-			std::cout << "GAP DETECTED: expected U = " << last_applied_update + 1 << ", got U = " << U << '\n';
+		uint64_t U = document["U"].GetUint64();
+		uint64_t u = document["u"].GetUint64();
+		if (u < last_update_id + 1) continue;  // whole event is outdated
+		if (U > last_update_id + 1) {
+			std::cout << "GAP DETECTED: expected U = " << last_update_id + 1 << ", got U = " << U << '\n';
 			// rebuild book - out of sync
 			ob.clear();
-			build_initial_orderbook(ob, 100);
+			last_update_id = build_initial_orderbook(ob, 100);
+			continue;
 		}
 		add_to_orderbook(ob, document["b"], BUY);
 		add_to_orderbook(ob, document["a"], SELL);
-		last_applied_update = u;
+		last_update_id = u;
 	}
+	return consumed;
 }
 
 void add_to_orderbook(OrderBook& ob, const rapidjson::Value& orders, Side side) {

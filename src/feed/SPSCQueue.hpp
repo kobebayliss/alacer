@@ -13,11 +13,11 @@ class SPSCQueue {
 	static constexpr uint64_t rounded_capacity = std::bit_ceil(capacity);  // round to power of two for one cycle position calculation
 
 	alignas(std::hardware_destructive_interference_size) std::atomic<uint64_t> head = 0;
-	uint64_t tail_cached = 0;
 	alignas(std::hardware_destructive_interference_size) std::atomic<uint64_t> tail = 0;
-	uint64_t head_cached = 0;
 
 public:
+	uint64_t tail_cached = 0;
+	uint64_t head_cached = 0;
 	SPSCQueue() {
 		buffer = static_cast<T*>(std::aligned_alloc(64, rounded_capacity * sizeof(T)));
 		if (!buffer) throw std::bad_alloc();

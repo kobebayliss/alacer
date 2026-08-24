@@ -35,9 +35,16 @@ target_compile_options(alacer PRIVATE
     -Wall
     -Wextra
     -Wpedantic
+    -Wno-deprecated-declarations
 )
 
 target_link_libraries(alacer PRIVATE 
 	cpr::cpr
 	ixwebsocket
 )
+option(ENABLE_ASAN "Build with AddressSanitizer" OFF)
+
+if(ENABLE_ASAN)
+  add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer -g -O1)
+  add_link_options(-fsanitize=address,undefined)
+endif()
