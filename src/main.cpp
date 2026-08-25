@@ -11,8 +11,8 @@
 #include <future>
 
 int main() {
-	OrderBook ob{"BTCUSDT"};
- 	WebSocketClient ws("wss://stream.binance.com:9443/ws/btcusdt@depth@100ms");
+	OrderBook ob{"ARMBUSDT"};
+ 	WebSocketClient ws("wss://stream.binance.com:9443/ws/armbusdt@depth@100ms");
 	SPSCQueue<RawMessage, CAPACITY> queue{};
 	ws.openConnection(queue);
 	while (!ws.isConnected()) {

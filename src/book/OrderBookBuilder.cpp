@@ -6,7 +6,7 @@
 #include <fstream>
 
 uint64_t build_initial_orderbook(OrderBook& ob, size_t depth) {
-	std::ofstream outputFile("data/book.json");
+	std::ofstream outputFile("data/book5.json");
 	if (!outputFile.is_open()) {
 		std::cerr << "Error: Could not open the file!" << std::endl;
 	}

@@ -12,12 +12,12 @@ class OrderBook {
 	mutable std::mutex mtx;
 	prices_map buy_orders;
 	prices_map sell_orders;
-	std::atomic<bool> updated;
 
 public:
 	std::string instrument;
+	std::atomic<bool> updated;
+
 	explicit OrderBook(std::string instrument);
-	
 	// rule of 5 functions
 	~OrderBook();
 	OrderBook (const OrderBook& other);
@@ -29,7 +29,7 @@ public:
 	void apply_delta(double price, double quantity, Side side);
 
 	// O(1)
-	std::optional<std::pair<double, double>> get_top_level(Side side) const;
+	std::pair<double, double> get_top_level(Side side) const;
 
 	// O(k)
 	std::vector<std::pair<double, double>> get_top_k_levels(size_t k, Side side) const;
