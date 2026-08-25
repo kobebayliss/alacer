@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include "OrderBook.hpp"
 
-OrderBook::OrderBook(std::string instrument) : instrument(std::move(instrument)) {};
+OrderBook::OrderBook(std::string instrument) : updated(false), instrument(std::move(instrument)) {};
 OrderBook::~OrderBook() = default;
 
 OrderBook::OrderBook(const OrderBook& other) {
@@ -100,6 +100,11 @@ double OrderBook::get_volume_at_price(double price, Side side) const {
 		throw std::invalid_argument(std::format("No orders at price {}", price));
 	}
 	return it->second.volume;
+}
+
+void OrderBook::notify_update() {
+	updated.store(true, std::memory_order_release);
+	updated.notify_one();
 }
 
 void OrderBook::clear() {

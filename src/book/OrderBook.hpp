@@ -1,5 +1,6 @@
 #pragma once
 #include "PriceLevel.hpp"
+#include <condition_variable>
 #include <vector>
 #include <map>
 #include <mutex>
@@ -11,6 +12,7 @@ class OrderBook {
 	mutable std::mutex mtx;
 	prices_map buy_orders;
 	prices_map sell_orders;
+	std::atomic<bool> updated;
 
 public:
 	std::string instrument;
@@ -34,6 +36,9 @@ public:
 
 	// O(log n) - can be made O(1)
 	double get_volume_at_price(double price, Side side) const;
+
+	// O(1)
+	void notify_update();
 
 	// O(1)
 	void clear();

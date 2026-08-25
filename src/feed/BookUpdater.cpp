@@ -28,6 +28,8 @@ uint64_t bookUpdater(SPSCQueue<RawMessage, CAPACITY> &queue, OrderBook &ob, std:
 		add_to_orderbook(ob, document["b"], BUY);
 		add_to_orderbook(ob, document["a"], SELL);
 		last_update_id = u;
+		// notify strategy thread of book update
+		ob.notify_update();
 	}
 	return consumed;
 }
