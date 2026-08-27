@@ -34,8 +34,8 @@ namespace OrderBookDisplay {
 		}
 	}
 	void print(const OrderBook& ob) {
-		std::vector<std::pair<double, double>> bids = ob.get_top_k_levels(DEPTH, BUY);
-		std::vector<std::pair<double, double>> asks = ob.get_top_k_levels(DEPTH, SELL);
+		std::vector<std::pair<double, double>> bids = ob.get_top_k_levels(DEPTH, BUY).first;
+		std::vector<std::pair<double, double>> asks = ob.get_top_k_levels(DEPTH, SELL).first;
 		std::string ob_display;
 		for (size_t i = 0; i < DEPTH; i++) {
 			ob_display = ob_display + formatLine(bids[i].first, bids[i].second, asks[i].first, asks[i].second);

@@ -7,7 +7,7 @@ void WebSocketClient::setOnMessage(SPSCQueue<RawMessage, CAPACITY>& queue) {
 		EventHandler::handleMessage(msg, queue, outputFile, connected, produced);
 	});
 }
-WebSocketClient::WebSocketClient(const std::string& url) : outputFile("data/updates5.json"), connected(false), produced(0) {
+WebSocketClient::WebSocketClient(const std::string& url) : outputFile("data/updates7.json"), connected(false), produced(0) {
 	webSocket.setUrl(url);
 	if (!outputFile.is_open()) {
 		std::cerr << "Error: Could not open the file!" << std::endl;

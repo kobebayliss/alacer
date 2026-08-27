@@ -1,6 +1,5 @@
 #pragma once
 #include "PriceLevel.hpp"
-#include <condition_variable>
 #include <vector>
 #include <map>
 #include <mutex>
@@ -32,7 +31,7 @@ public:
 	std::pair<double, double> get_top_level(Side side) const;
 
 	// O(k)
-	std::vector<std::pair<double, double>> get_top_k_levels(size_t k, Side side) const;
+	std::pair<std::vector<std::pair<double, double>>, double> get_top_k_levels(size_t k, Side side) const;
 
 	// O(log n) - can be made O(1)
 	double get_volume_at_price(double price, Side side) const;

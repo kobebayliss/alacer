@@ -1,6 +1,7 @@
 #include <format>
 #include <mutex>
 #include <stdexcept>
+#include <utility>
 #include "OrderBook.hpp"
 
 OrderBook::OrderBook(std::string instrument) : updated(false), instrument(std::move(instrument)) {};
@@ -68,9 +69,10 @@ std::pair<double, double> OrderBook::get_top_level(Side side) const {
 	}
 }
 
-std::vector<std::pair<double, double>> OrderBook::get_top_k_levels(size_t k, Side side) const {
+std::pair<std::vector<std::pair<double, double>>, double> OrderBook::get_top_k_levels(size_t k, Side side) const {
 	const prices_map& map = (side == BUY) ? buy_orders : sell_orders;
 	std::vector<std::pair<double, double>> result;
+	double volume = 0;
 	std::lock_guard lock(mtx);
 	k = std::min(k, map.size());
 	result.reserve(k);
@@ -78,16 +80,18 @@ std::vector<std::pair<double, double>> OrderBook::get_top_k_levels(size_t k, Sid
 		auto it = map.rbegin();
 		while (k--) {
 			result.emplace_back(it->first, it->second.volume);
+			volume += it->second.volume;
 			it++;
 		}
 	} else {
 		auto it = map.begin();
 		while (k--) {
 			result.emplace_back(it->first, it->second.volume);
+			volume += it->second.volume;
 			it++;
 		}
 	}
-	return result;
+	return std::make_pair(result, volume);
 }
 
 double OrderBook::get_volume_at_price(double price, Side side) const {

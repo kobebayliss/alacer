@@ -8,6 +8,7 @@
 #include "book/OrderBookDisplay.hpp"
 #include "feed/WebSocketClient.hpp"
 #include "feed/BookUpdater.hpp"
+#include "strategy/Strategy.hpp"
 #include <future>
 
 int main() {
@@ -23,6 +24,7 @@ int main() {
 	std::atomic<bool> running = true;
 	auto i1 = std::async(std::launch::async, bookUpdater, std::ref(queue), std::ref(ob), std::ref(running), last_update_id); 
 	std::thread display(OrderBookDisplay::printLoop, std::ref(ob), std::ref(running));
+	std::thread strategy(strategyLoop, std::ref(ob), std::ref(running));
 	std::cin.get();
 
 	running = false;
