@@ -22,7 +22,8 @@ FetchContent_MakeAvailable(ixwebsocket)
 find_package(cpr REQUIRED)
 find_package(RapidJSON REQUIRED)
 add_executable(alacer
-    src/main.cpp
+    src/backtesting/BacktestDataFeed.cpp
+    src/backtesting/BacktestEventHandler.cpp
     src/book/OrderBook.cpp
     src/book/OrderBookBuilder.cpp
     src/book/OrderBookDisplay.cpp
@@ -30,6 +31,7 @@ add_executable(alacer
     src/feed/EventHandler.cpp
     src/feed/BookUpdater.cpp
     src/strategy/Strategy.cpp
+    src/main.cpp
 )
 target_include_directories(alacer PRIVATE /opt/homebrew/include)
 target_compile_options(alacer PRIVATE

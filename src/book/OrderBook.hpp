@@ -6,6 +6,8 @@
 #include <string>
 #include <atomic>
 
+const size_t DEPTH = 1000;
+
 typedef std::map<double, PriceLevel> prices_map;
 class OrderBook {
 	mutable std::mutex mtx;

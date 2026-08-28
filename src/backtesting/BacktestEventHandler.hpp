@@ -1,6 +1,7 @@
 #pragma once
 #include "../feed/SPSCQueue.hpp"
+#include <rapidjson/document.h>
 
 namespace BacktestEventHandler {
-	void handleMessage(SPSCQueue<RawMessage, CAPACITY>& queue, std::ofstream& outputFile, std::atomic<bool>& connected, uint64_t& produced);
+	void handleMessage(rapidjson::Document& document, SPSCQueue<RawMessage, CAPACITY>& queue);
 }
