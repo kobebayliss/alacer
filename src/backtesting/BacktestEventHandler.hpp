@@ -3,5 +3,5 @@
 #include <rapidjson/document.h>
 
 namespace BacktestEventHandler {
-	void handleMessage(rapidjson::Document& document, SPSCQueue<RawMessage, CAPACITY>& queue);
+	void handleMessage(const char* data, size_t length, SPSCQueue<RawMessage, CAPACITY>& queue);
 }

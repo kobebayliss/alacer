@@ -24,20 +24,18 @@ std::unique_ptr<std::string> getBookData(FILE* file) {
 }
 
 
-void backtestJsonFile(FILE* file, SPSCQueue<RawMessage, CAPACITY>& queue) {
+size_t backtestJsonFile(FILE* file, SPSCQueue<RawMessage, CAPACITY>& queue) {
 	if (!file) {
 		std::cerr << "Error: Could not open file.";
-		return;
+		return 0;
 	}
 	char lineBuffer[65536];
 	rapidjson::Document document;
+	size_t produced = 0;
 	while (fgets(lineBuffer, sizeof(lineBuffer), file)) {
-		document.Parse(lineBuffer);
-		if (document.HasParseError()) {
-			std::cerr << "Skipping malformed line" << std::endl;
-			continue;
-		}
-		BacktestEventHandler::handleMessage(document, queue);
+		size_t length = strlen(lineBuffer);
+		BacktestEventHandler::handleMessage(lineBuffer, length, queue);
 	}
 	fclose(file);
+	return produced;
 }

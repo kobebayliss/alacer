@@ -1,5 +1,4 @@
 #include "BookUpdater.hpp"
-#include "../book/OrderBookBuilder.hpp"
 #include <iostream>
 #include <sys/types.h>
 
@@ -7,7 +6,10 @@ uint64_t bookUpdater(SPSCQueue<RawMessage, CAPACITY> &queue, OrderBook &ob, std:
 	uint64_t consumed = 0;
 	while (running) {
 		auto raw = queue.try_pop();
-		if (!raw) continue;  // queue is empty
+		if (!raw) {  // queue is empty
+			std::cout << "EMPTY.\n"; 
+			continue;
+		}
 		++consumed;
 		rapidjson::Document document;
 		document.Parse(raw->data, raw->length);

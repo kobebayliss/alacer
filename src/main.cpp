@@ -21,7 +21,15 @@ int main() {
 		FILE* data_file = fopen("data/marketdata1.json", "rb");
 		std::string bookData = *getBookData(data_file).get();
 		uint64_t last_update_id = build_initial_orderbook(ob, bookData);
-		std::thread producer(backtestJsonFile, std::ref(data_file), std::ref(queue));
+		std::atomic<bool> running = true;
+		auto p1 = std::async(std::launch::async, backtestJsonFile, std::ref(data_file), std::ref(queue));
+		auto i1 = std::async(std::launch::async, bookUpdater, std::ref(queue), std::ref(ob), std::ref(running), last_update_id); 
+		std::thread strategy(strategyLoop, std::ref(ob), std::ref(running));
+		std::cin.get();
+
+		running = false;
+		std::cout << "producer writes: " << p1.get() << '\n';
+		std::cout << "consumer reads: " << i1.get() << '\n';
 	} else {
 		WebSocketClient ws("wss://stream.binance.com:9443/ws/btcusdt@depth@100ms");
 		ws.openConnection(queue);
