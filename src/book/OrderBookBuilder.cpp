@@ -6,7 +6,7 @@
 #include <fstream>
 
 uint64_t build_initial_orderbook(OrderBook& ob, size_t depth) {
-	std::ofstream outputFile("data/book7.json");
+	std::ofstream outputFile("data/marketdata3.json");
 	if (!outputFile.is_open()) {
 		std::cerr << "Error: Could not open the file!" << std::endl;
 	}
@@ -17,7 +17,7 @@ uint64_t build_initial_orderbook(OrderBook& ob, size_t depth) {
 			{"limit", std::to_string(depth)}
 		}
 	);
-	outputFile << r.text;
+	outputFile << r.text << '\n';
 	outputFile.close();
 	rapidjson::Document document;
 	document.Parse(r.text.c_str());

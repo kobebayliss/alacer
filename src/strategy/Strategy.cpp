@@ -2,14 +2,8 @@
 #include "OrderIntent.hpp"
 #include <atomic>
 #include <iostream>
-#include <fstream>
 
 void strategyLoop(OrderBook &ob, std::atomic<bool> &running) {
-	std::ofstream outputFile("data/imbalance7.txt");
-	if (!outputFile.is_open()) {
-		std::cerr << "Error: Could not open the file!" << std::endl;
-		return;
-	}
 	double running_price;
 	bool holding = false;
 	double holding_price;
@@ -34,11 +28,7 @@ void strategyLoop(OrderBook &ob, std::atomic<bool> &running) {
 			profit += (running_price - holding_price);
 			holding = false;
 		}
-		outputFile << imbalance << '\n'; 
-		outputFile.flush();
 		std::cout << "IMBALANCE IS: " << imbalance << '\n';
 	}
-	outputFile << "PROFIT: " << profit;
-	outputFile.flush();
-	outputFile.close();
+	std::cout << "PROFIT: " << profit;
 }

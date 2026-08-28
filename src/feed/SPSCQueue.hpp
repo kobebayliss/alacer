@@ -5,6 +5,13 @@
 #include <bit>
 #include <memory>
 
+const uint64_t CAPACITY = 4096;
+
+struct RawMessage {
+	char data[131072];
+	uint64_t length;
+};
+
 // custom torus queue from https://github.com/kobebayliss/torus
 template<typename T, uint64_t capacity>
 class SPSCQueue {

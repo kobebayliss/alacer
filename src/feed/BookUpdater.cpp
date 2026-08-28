@@ -19,11 +19,8 @@ uint64_t bookUpdater(SPSCQueue<RawMessage, CAPACITY> &queue, OrderBook &ob, std:
 		uint64_t u = document["u"].GetUint64();
 		if (u < last_update_id + 1) continue;  // whole event is outdated
 		if (U > last_update_id + 1) {
-			std::cout << "GAP DETECTED: expected U = " << last_update_id + 1 << ", got U = " << U << '\n';
-			// rebuild book - out of sync
-			ob.clear();
-			last_update_id = build_initial_orderbook(ob, 100);
-			continue;
+			std::cerr << "GAP DETECTED: expected U = " << last_update_id + 1 << ", got U = " << U << '\n';
+			std::exit(1);
 		}
 		add_to_orderbook(ob, document["b"], BUY);
 		add_to_orderbook(ob, document["a"], SELL);

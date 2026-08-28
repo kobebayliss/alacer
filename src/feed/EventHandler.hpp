@@ -2,13 +2,6 @@
 #include <ixwebsocket/IXWebSocket.h>
 #include "SPSCQueue.hpp"
 
-const uint64_t CAPACITY = 4096;
-
-struct RawMessage {
-	char data[131072];
-	uint64_t length;
-};
-
 namespace EventHandler {
 	void handleMessage(const ix::WebSocketMessagePtr& msg, SPSCQueue<RawMessage, CAPACITY>& queue, std::ofstream& outputFile, std::atomic<bool>& connected, uint64_t& produced);
 }
