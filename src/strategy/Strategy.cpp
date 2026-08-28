@@ -10,6 +10,10 @@ void strategyLoop(OrderBook &ob, std::atomic<bool> &running) {
 		std::cerr << "Error: Could not open the file!" << std::endl;
 		return;
 	}
+	double running_price;
+	bool holding = false;
+	double holding_price;
+	double profit = 0.0;
 	while (running) {
 		ob.updated.wait(false, std::memory_order_acquire);
 		ob.updated.store(false, std::memory_order_relaxed);
@@ -18,12 +22,23 @@ void strategyLoop(OrderBook &ob, std::atomic<bool> &running) {
 		const size_t k = 5;
 		auto top_k_bids = ob.get_top_k_levels(k, BUY);
 		auto top_k_asks = ob.get_top_k_levels(k, SELL);
+		running_price = (top_k_bids.first[0].first + top_k_asks.first[0].first) / 2.0;
 		double bid_volume = top_k_bids.second;
 		double ask_volume = top_k_asks.second;
 		double imbalance = (bid_volume - ask_volume) / (bid_volume + ask_volume);
-		outputFile << imbalance << '\n';
+		if (imbalance > 0.9 && !holding) {
+			holding_price = running_price;
+			holding = true;
+		} else if (imbalance < -0.9 && holding) {
+			std::cout << "BOUGHT AT: $" << holding_price << " | SOLD AT: $" << running_price;
+			profit += (running_price - holding_price);
+			holding = false;
+		}
+		outputFile << imbalance << '\n'; 
 		outputFile.flush();
 		std::cout << "IMBALANCE IS: " << imbalance << '\n';
 	}
+	outputFile << "PROFIT: " << profit;
+	outputFile.flush();
 	outputFile.close();
 }

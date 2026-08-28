@@ -4,7 +4,7 @@
 #include <map>
 #include <mutex>
 #include <string>
-#include <optional>
+#include <atomic>
 
 typedef std::map<double, PriceLevel> prices_map;
 class OrderBook {
