@@ -18,7 +18,7 @@ int main() {
 	OrderBook ob{"BTCUSDT"};
 	SPSCQueue<RawMessage, CAPACITY> queue{};
 	if (BACKTESTING_MODE) {
-		FILE* data_file = fopen("data/marketdata1.json", "rb");
+		FILE* data_file = fopen("data/marketdata4.json", "rb");
 		std::string bookData = *getBookData(data_file).get();
 		uint64_t last_update_id = build_initial_orderbook(ob, bookData);
 		std::atomic<bool> running = true;
@@ -28,6 +28,9 @@ int main() {
 		std::cin.get();
 
 		running = false;
+		ob.updated.store(true, std::memory_order_release);
+		ob.updated.notify_all();
+		strategy.join();
 		std::cout << "producer writes: " << p1.get() << '\n';
 		std::cout << "consumer reads: " << i1.get() << '\n';
 	} else {
@@ -46,6 +49,10 @@ int main() {
 
 		running = false;
 		ws.closeConnection();
+		ob.updated.store(true, std::memory_order_release);
+		ob.updated.notify_all();
+		strategy.join();
+		display.join();
 		std::cout << "producer writes: " << ws.produced << '\n';
 		std::cout << "consumer reads: " << i1.get() << '\n';
 	}

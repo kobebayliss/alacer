@@ -29,7 +29,7 @@ size_t backtestJsonFile(FILE* file, SPSCQueue<RawMessage, CAPACITY>& queue) {
 		std::cerr << "Error: Could not open file.";
 		return 0;
 	}
-	char lineBuffer[65536];
+	char lineBuffer[131072];
 	rapidjson::Document document;
 	size_t produced = 0;
 	while (fgets(lineBuffer, sizeof(lineBuffer), file)) {

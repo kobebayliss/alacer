@@ -2,12 +2,14 @@
 #include "OrderIntent.hpp"
 #include <atomic>
 #include <iostream>
+#include <fstream>
 
 void strategyLoop(OrderBook &ob, std::atomic<bool> &running) {
 	double running_price;
 	bool holding = false;
 	double holding_price;
 	double profit = 0.0;
+	std::ofstream outputFile("data/trades4.txt");
 	while (running) {
 		ob.updated.wait(false, std::memory_order_acquire);
 		ob.updated.store(false, std::memory_order_relaxed);
@@ -24,11 +26,11 @@ void strategyLoop(OrderBook &ob, std::atomic<bool> &running) {
 			holding_price = running_price;
 			holding = true;
 		} else if (imbalance < -0.9 && holding) {
-			std::cout << "BOUGHT AT: $" << holding_price << " | SOLD AT: $" << running_price;
+			outputFile << "BOUGHT AT: $" << holding_price << " | SOLD AT: $" << running_price << '\n';
 			profit += (running_price - holding_price);
 			holding = false;
 		}
-		std::cout << "IMBALANCE IS: " << imbalance << '\n';
 	}
-	std::cout << "PROFIT: " << profit;
+	outputFile << "PROFIT: $" << profit;
+	outputFile.close();
 }
