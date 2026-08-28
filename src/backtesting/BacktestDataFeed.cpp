@@ -24,7 +24,7 @@ std::unique_ptr<std::string> getBookData(FILE* file) {
 }
 
 
-void BacktestJsonFile(FILE* file, SPSCQueue<RawMessage, CAPACITY>& queue) {
+void backtestJsonFile(FILE* file, SPSCQueue<RawMessage, CAPACITY>& queue) {
 	if (!file) {
 		std::cerr << "Error: Could not open file.";
 		return;
