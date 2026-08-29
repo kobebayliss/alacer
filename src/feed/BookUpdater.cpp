@@ -1,16 +1,18 @@
 #include "BookUpdater.hpp"
 #include <iostream>
 #include <sys/types.h>
+#include <fstream>
 
-uint64_t bookUpdater(SPSCQueue<RawMessage, CAPACITY> &queue, OrderBook &ob, std::atomic<bool> &running, uint64_t last_update_id) {
+uint64_t bookUpdater(SPSCQueue<RawMessage, CAPACITY> &queue, OrderBook &ob, std::atomic<bool> &running, uint64_t last_update_id, std::ofstream* outputFile) {
 	uint64_t consumed = 0;
 	while (running) {
 		auto raw = queue.try_pop();
 		if (!raw) {  // queue is empty
-			std::cout << "EMPTY.\n"; 
 			continue;
 		}
 		++consumed;
+		if (outputFile) *outputFile << std::string_view(raw->data, raw->length) << '\n';
+
 		rapidjson::Document document;
 		document.Parse(raw->data, raw->length);
 		if (document.HasParseError()) {

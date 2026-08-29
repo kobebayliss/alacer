@@ -3,5 +3,5 @@
 #include "SPSCQueue.hpp"
 
 namespace EventHandler {
-	void handleMessage(const ix::WebSocketMessagePtr& msg, SPSCQueue<RawMessage, CAPACITY>& queue, std::ofstream& outputFile, std::atomic<bool>& connected, uint64_t& produced);
+	void handleMessage(const ix::WebSocketMessagePtr& msg, SPSCQueue<RawMessage, CAPACITY>& queue, std::atomic<bool>& connected, uint64_t& produced);
 }

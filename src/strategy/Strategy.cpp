@@ -9,7 +9,7 @@ void strategyLoop(OrderBook &ob, std::atomic<bool> &running) {
 	bool holding = false;
 	double holding_price;
 	double profit = 0.0;
-	std::ofstream outputFile("data/trades4.txt");
+	std::ofstream outputFile("data/trades.txt");
 	while (running) {
 		ob.updated.wait(false, std::memory_order_acquire);
 		ob.updated.store(false, std::memory_order_relaxed);
