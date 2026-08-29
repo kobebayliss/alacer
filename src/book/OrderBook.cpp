@@ -1,9 +1,10 @@
 #include <format>
 #include <mutex>
 #include <stdexcept>
+#include <utility>
 #include "OrderBook.hpp"
 
-OrderBook::OrderBook(std::string instrument) : instrument(std::move(instrument)) {};
+OrderBook::OrderBook(std::string instrument) : updated(false), instrument(std::move(instrument)) {};
 OrderBook::~OrderBook() = default;
 
 OrderBook::OrderBook(const OrderBook& other) {
@@ -57,22 +58,21 @@ void OrderBook::apply_delta(double price, double volume, Side side) {
 	}
 }
 
-std::optional<std::pair<double, double>> OrderBook::get_top_level(Side side) const {
+std::pair<double, double> OrderBook::get_top_level(Side side) const {
 	std::lock_guard lock(mtx);
 	if (side == BUY) {
-		if (buy_orders.empty()) return std::nullopt;
 		auto it = buy_orders.rbegin();
 		return std::make_pair(it->first, it->second.volume);
 	} else {
-		if (sell_orders.empty()) return std::nullopt;
 		auto it = sell_orders.begin();
 		return std::make_pair(it->first, it->second.volume);
 	}
 }
 
-std::vector<std::pair<double, double>> OrderBook::get_top_k_levels(size_t k, Side side) const {
+std::pair<std::vector<std::pair<double, double>>, double> OrderBook::get_top_k_levels(size_t k, Side side) const {
 	const prices_map& map = (side == BUY) ? buy_orders : sell_orders;
 	std::vector<std::pair<double, double>> result;
+	double volume = 0;
 	std::lock_guard lock(mtx);
 	k = std::min(k, map.size());
 	result.reserve(k);
@@ -80,16 +80,18 @@ std::vector<std::pair<double, double>> OrderBook::get_top_k_levels(size_t k, Sid
 		auto it = map.rbegin();
 		while (k--) {
 			result.emplace_back(it->first, it->second.volume);
+			volume += it->second.volume;
 			it++;
 		}
 	} else {
 		auto it = map.begin();
 		while (k--) {
 			result.emplace_back(it->first, it->second.volume);
+			volume += it->second.volume;
 			it++;
 		}
 	}
-	return result;
+	return std::make_pair(result, volume);
 }
 
 double OrderBook::get_volume_at_price(double price, Side side) const {
@@ -100,6 +102,11 @@ double OrderBook::get_volume_at_price(double price, Side side) const {
 		throw std::invalid_argument(std::format("No orders at price {}", price));
 	}
 	return it->second.volume;
+}
+
+void OrderBook::notify_update() {
+	updated.store(true, std::memory_order_release);
+	updated.notify_one();
 }
 
 void OrderBook::clear() {

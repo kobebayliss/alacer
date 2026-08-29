@@ -4,7 +4,9 @@
 #include <map>
 #include <mutex>
 #include <string>
-#include <optional>
+#include <atomic>
+
+const size_t DEPTH = 1000;
 
 typedef std::map<double, PriceLevel> prices_map;
 class OrderBook {
@@ -14,8 +16,9 @@ class OrderBook {
 
 public:
 	std::string instrument;
+	std::atomic<bool> updated;
+
 	explicit OrderBook(std::string instrument);
-	
 	// rule of 5 functions
 	~OrderBook();
 	OrderBook (const OrderBook& other);
@@ -27,13 +30,16 @@ public:
 	void apply_delta(double price, double quantity, Side side);
 
 	// O(1)
-	std::optional<std::pair<double, double>> get_top_level(Side side) const;
+	std::pair<double, double> get_top_level(Side side) const;
 
 	// O(k)
-	std::vector<std::pair<double, double>> get_top_k_levels(size_t k, Side side) const;
+	std::pair<std::vector<std::pair<double, double>>, double> get_top_k_levels(size_t k, Side side) const;
 
 	// O(log n) - can be made O(1)
 	double get_volume_at_price(double price, Side side) const;
+
+	// O(1)
+	void notify_update();
 
 	// O(1)
 	void clear();

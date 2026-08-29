@@ -2,13 +2,11 @@
 #include <atomic>
 #include <memory.h>
 #include <iostream>
-#include <fstream>
 
 namespace EventHandler {
-	void handleMessage(const ix::WebSocketMessagePtr &msg, SPSCQueue<RawMessage, CAPACITY>& queue, std::ofstream& outputFile, std::atomic<bool>& connected, uint64_t& produced) {
+	void handleMessage(const ix::WebSocketMessagePtr &msg, SPSCQueue<RawMessage, CAPACITY>& queue, std::atomic<bool>& connected, uint64_t& produced) {
 		if (msg->type == ix::WebSocketMessageType::Message)
 		{
-			outputFile << msg->str.data() << '\n';
 			RawMessage raw{};
 			raw.length = std::min(msg->str.size(), sizeof(raw.data));
 			memcpy(raw.data, msg->str.data(), raw.length);

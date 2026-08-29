@@ -4,10 +4,10 @@
 
 void WebSocketClient::setOnMessage(SPSCQueue<RawMessage, CAPACITY>& queue) {
 	webSocket.setOnMessageCallback([this, &queue](const ix::WebSocketMessagePtr& msg) {
-		EventHandler::handleMessage(msg, queue, outputFile, connected, produced);
+		EventHandler::handleMessage(msg, queue, connected, produced);
 	});
 }
-WebSocketClient::WebSocketClient(const std::string& url) : outputFile("data/updates.json"), connected(false), produced(0) {
+WebSocketClient::WebSocketClient(const std::string& url, const std::string& outputPath) : connected(false), snapshotWritten(false), produced(0), outputFile(outputPath) {
 	webSocket.setUrl(url);
 	if (!outputFile.is_open()) {
 		std::cerr << "Error: Could not open the file!" << std::endl;
@@ -24,6 +24,11 @@ void WebSocketClient::closeConnection() {
 	connected.store(false, std::memory_order_release);
 	webSocket.stop();
 	outputFile.close();
+}
+void WebSocketClient::writeSnapshot(const std::string& snapshotJson) {
+	outputFile << snapshotJson << '\n';
+	outputFile.flush();
+	snapshotWritten.store(true, std::memory_order_release);
 }
 bool WebSocketClient::isConnected() const {
 	return connected.load(std::memory_order_acquire);
