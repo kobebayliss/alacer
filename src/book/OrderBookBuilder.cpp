@@ -8,7 +8,7 @@
 uint64_t build_initial_orderbook(OrderBook& ob, std::string& data) {
 	if (data[0] == '\0') { // NOT backesting (else we pass the OB initial state)
 		cpr::Response r = cpr::Get(
-			cpr::Url{"https://api.binance.com/api/v3/depth"},
+			cpr::Url{"https://testnet.binance.vision/api/v3/depth"},
 			cpr::Parameters{
 				{"symbol", ob.instrument},
 				{"limit", std::to_string(DEPTH)}

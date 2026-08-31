@@ -48,7 +48,7 @@ static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& queue) {
 }
 
 static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& queue) {
-	WebSocketClient ws("wss://stream.binance.com:9443/ws/btcusdt@depth@100ms", "data/marketdata.json");
+	WebSocketClient ws("wss://stream.testnet.binance.vision/ws/btcusdt@depth@100ms", "data/marketdata.json");
 
 	ws.openConnection(queue);
 	while (!ws.isConnected()) {
