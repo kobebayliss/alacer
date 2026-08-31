@@ -1,10 +1,11 @@
 #pragma once
-#include "PriceLevel.hpp"
 #include <vector>
 #include <map>
 #include <mutex>
 #include <string>
 #include <atomic>
+#include "../types/PriceLevel.hpp"
+#include "../types/Side.hpp"
 
 const size_t DEPTH = 1000;
 

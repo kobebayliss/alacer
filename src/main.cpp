@@ -3,15 +3,17 @@
 #include <string>
 #include <functional>
 #include <atomic>
+#include <future>
 #include "backtesting/BacktestDataFeed.hpp"
 #include "book/OrderBookBuilder.hpp"
 #include "book/OrderBook.hpp"
 #include "book/OrderBookDisplay.hpp"
-#include "feed/SPSCQueue.hpp"
+#include "types/SPSCQueue.hpp"
+#include "types/RawMessage.hpp"
+#include "types/OrderIntent.hpp"
 #include "feed/WebSocketClient.hpp"
 #include "feed/BookUpdater.hpp"
-#include "strategy/Strategy.hpp"
-#include <future>
+#include "execution/Strategy.hpp"
 
 const bool BACKTESTING_MODE = false;
 
@@ -22,7 +24,7 @@ static void signalShutdown(OrderBook& ob, std::atomic<bool>& running) {
 	ob.updated.notify_all();
 }
 
-static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& queue) {
+static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue) {
 	FILE* dataFile = fopen("marketdata.json", "rb");
 	if (!dataFile) {
 		std::cerr << "Error: could not open backtest data file\n";
@@ -33,8 +35,8 @@ static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& queue) {
 	uint64_t lastUpdateId = build_initial_orderbook(ob, bookData);
 
 	std::atomic<bool> running = true;
-	auto producer = std::async(std::launch::async, backtestJsonFile, std::ref(dataFile), std::ref(queue));
-	auto consumer = std::async(std::launch::async, bookUpdater, std::ref(queue), std::ref(ob), std::ref(running), lastUpdateId, static_cast<std::ofstream*>(nullptr));
+	auto producer = std::async(std::launch::async, backtestJsonFile, std::ref(dataFile), std::ref(eventQueue));
+	auto consumer = std::async(std::launch::async, bookUpdater, std::ref(eventQueue), std::ref(ob), std::ref(running), lastUpdateId, static_cast<std::ofstream*>(nullptr));
 	std::thread strategy(strategyLoop, std::ref(ob), std::ref(running));
 
 	std::cin.get();
@@ -47,10 +49,10 @@ static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& queue) {
 	fclose(dataFile);
 }
 
-static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& queue) {
+static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue) {
 	WebSocketClient ws("wss://stream.testnet.binance.vision/ws/btcusdt@depth@100ms", "data/marketdata.json");
 
-	ws.openConnection(queue);
+	ws.openConnection(eventQueue);
 	while (!ws.isConnected()) {
 		std::this_thread::yield();
 	}
@@ -60,7 +62,7 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& queue) {
 	ws.writeSnapshot(snapshotJson);
 
 	std::atomic<bool> running = true;
-	auto consumer = std::async(std::launch::async, bookUpdater, std::ref(queue), std::ref(ob), std::ref(running), lastUpdateId, &ws.outputFile);
+	auto consumer = std::async(std::launch::async, bookUpdater, std::ref(eventQueue), std::ref(ob), std::ref(running), lastUpdateId, &ws.outputFile);
 	std::thread display(OrderBookDisplay::printLoop, std::ref(ob), std::ref(running));
 	std::thread strategy(strategyLoop, std::ref(ob), std::ref(running));
 
@@ -76,12 +78,13 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& queue) {
 
 int main() {
 	OrderBook ob{"BTCUSDT"};
-	SPSCQueue<RawMessage, CAPACITY> queue{};
+	SPSCQueue<RawMessage, CAPACITY> eventQueue{};
+	SPSCQueue<OrderIntent, CAPACITY> orderQueue{};
 	
 	if (BACKTESTING_MODE) {
-		runBacktest(ob, queue);
+		runBacktest(ob, eventQueue);
 	} else {
-		runLive(ob, queue);
+		runLive(ob, eventQueue);
 	}
 
 	return 0;

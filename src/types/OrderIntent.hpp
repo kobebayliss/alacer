@@ -1,5 +1,6 @@
 #pragma once
-#include "../book/OrderBook.hpp"
+#include <functional>
+#include "Side.hpp"
 
 enum class IntentType { PLACE, CANCEL };
 

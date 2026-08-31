@@ -1,7 +1,5 @@
 #pragma once
 
-enum Side { BUY, SELL };
-
 struct PriceLevel {
 	double price;
 	double volume;

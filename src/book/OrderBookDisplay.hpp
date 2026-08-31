@@ -1,6 +1,6 @@
 #pragma once
-#include "OrderBook.hpp"
 #include <atomic>
+#include "OrderBook.hpp"
 
 namespace OrderBookDisplay {
 	void printLoop(const OrderBook& ob, std::atomic<bool>& running);

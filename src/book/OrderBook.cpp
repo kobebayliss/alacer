@@ -40,7 +40,7 @@ OrderBook& OrderBook::operator=(OrderBook&& other) noexcept {
 }
 
 void OrderBook::apply_delta(double price, double volume, Side side) {
-	prices_map& map = (side == BUY) ? buy_orders : sell_orders;
+	prices_map& map = (side == Side::BUY) ? buy_orders : sell_orders;
 	std::lock_guard<std::mutex> lock(mtx);
 	auto it = map.find(price);
 	if (volume == 0.0) {
@@ -60,7 +60,7 @@ void OrderBook::apply_delta(double price, double volume, Side side) {
 
 std::pair<double, double> OrderBook::get_top_level(Side side) const {
 	std::lock_guard lock(mtx);
-	if (side == BUY) {
+	if (side == Side::BUY) {
 		auto it = buy_orders.rbegin();
 		return std::make_pair(it->first, it->second.volume);
 	} else {
@@ -70,13 +70,13 @@ std::pair<double, double> OrderBook::get_top_level(Side side) const {
 }
 
 std::pair<std::vector<std::pair<double, double>>, double> OrderBook::get_top_k_levels(size_t k, Side side) const {
-	const prices_map& map = (side == BUY) ? buy_orders : sell_orders;
+	const prices_map& map = (side == Side::BUY) ? buy_orders : sell_orders;
 	std::vector<std::pair<double, double>> result;
 	double volume = 0;
 	std::lock_guard lock(mtx);
 	k = std::min(k, map.size());
 	result.reserve(k);
-	if (side == BUY) {
+	if (side == Side::BUY) {
 		auto it = map.rbegin();
 		while (k--) {
 			result.emplace_back(it->first, it->second.volume);
@@ -95,7 +95,7 @@ std::pair<std::vector<std::pair<double, double>>, double> OrderBook::get_top_k_l
 }
 
 double OrderBook::get_volume_at_price(double price, Side side) const {
-	const prices_map& map = (side == BUY) ? buy_orders : sell_orders;
+	const prices_map& map = (side == Side::BUY) ? buy_orders : sell_orders;
 	std::lock_guard lock(mtx);
 	auto it = map.find(price);
 	if (it == map.end()) {

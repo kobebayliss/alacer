@@ -1,8 +1,8 @@
-#include "BacktestDataFeed.hpp"
-#include "BacktestEventHandler.hpp"
 #include "rapidjson/document.h"
 #include <iostream>
 #include <memory>
+#include "BacktestDataFeed.hpp"
+#include "BacktestEventHandler.hpp"
 
 std::unique_ptr<std::string> getBookData(FILE* file) {
 	std::string bookData;
@@ -24,7 +24,7 @@ std::unique_ptr<std::string> getBookData(FILE* file) {
 }
 
 
-size_t backtestJsonFile(FILE* file, SPSCQueue<RawMessage, CAPACITY>& queue) {
+size_t backtestJsonFile(FILE* file, SPSCQueue<RawMessage, CAPACITY>& eventQueue) {
 	if (!file) {
 		std::cerr << "Error: Could not open file.";
 		return 0;
@@ -34,7 +34,7 @@ size_t backtestJsonFile(FILE* file, SPSCQueue<RawMessage, CAPACITY>& queue) {
 	size_t produced = 0;
 	while (fgets(lineBuffer, sizeof(lineBuffer), file)) {
 		size_t length = strlen(lineBuffer);
-		BacktestEventHandler::handleMessage(lineBuffer, length, queue);
+		BacktestEventHandler::handleMessage(lineBuffer, length, eventQueue);
 	}
 	fclose(file);
 	return produced;

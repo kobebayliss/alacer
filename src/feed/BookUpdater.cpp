@@ -1,13 +1,13 @@
-#include "BookUpdater.hpp"
 #include <iostream>
 #include <sys/types.h>
 #include <fstream>
+#include "BookUpdater.hpp"
 
-uint64_t bookUpdater(SPSCQueue<RawMessage, CAPACITY> &queue, OrderBook &ob, std::atomic<bool> &running, uint64_t last_update_id, std::ofstream* outputFile) {
+uint64_t bookUpdater(SPSCQueue<RawMessage, CAPACITY> &eventQueue, OrderBook &ob, std::atomic<bool> &running, uint64_t last_update_id, std::ofstream* outputFile) {
 	uint64_t consumed = 0;
 	while (running) {
-		auto raw = queue.try_pop();
-		if (!raw) {  // queue is empty
+		auto raw = eventQueue.try_pop();
+		if (!raw) {  // eventQueue is empty
 			continue;
 		}
 		++consumed;
@@ -26,8 +26,8 @@ uint64_t bookUpdater(SPSCQueue<RawMessage, CAPACITY> &queue, OrderBook &ob, std:
 			std::cerr << "GAP DETECTED: expected U = " << last_update_id + 1 << ", got U = " << U << '\n';
 			std::exit(1);
 		}
-		add_to_orderbook(ob, document["b"], BUY);
-		add_to_orderbook(ob, document["a"], SELL);
+		add_to_orderbook(ob, document["b"], Side::BUY);
+		add_to_orderbook(ob, document["a"], Side::SELL);
 		last_update_id = u;
 		// notify strategy thread of book update
 		ob.notify_update();

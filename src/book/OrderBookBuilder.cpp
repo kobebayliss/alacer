@@ -1,9 +1,9 @@
-#include "OrderBookBuilder.hpp"
 #include <cpr/cpr.h>
 #include <rapidjson/document.h>
 #include <iostream>
-#include "../feed/BookUpdater.hpp"
 #include <fstream>
+#include "OrderBookBuilder.hpp"
+#include "../feed/BookUpdater.hpp"
 
 uint64_t build_initial_orderbook(OrderBook& ob, std::string& data) {
 	if (data[0] == '\0') { // NOT backesting (else we pass the OB initial state)
@@ -23,8 +23,8 @@ uint64_t build_initial_orderbook(OrderBook& ob, std::string& data) {
 		std::cout << "FAILED TO BUILD ORDER BOOK: " << data << '\n';
 		return 0;
 	}
-	add_to_orderbook(ob, document["bids"], BUY);
-	add_to_orderbook(ob, document["asks"], SELL);
+	add_to_orderbook(ob, document["bids"], Side::BUY);
+	add_to_orderbook(ob, document["asks"], Side::SELL);
 	return document["lastUpdateId"].GetUint64();
 }
 

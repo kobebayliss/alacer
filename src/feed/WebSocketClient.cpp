@@ -1,10 +1,11 @@
-#include "WebSocketClient.hpp"
 #include <atomic>
 #include <iostream>
+#include "EventHandler.hpp"
+#include "WebSocketClient.hpp"
 
-void WebSocketClient::setOnMessage(SPSCQueue<RawMessage, CAPACITY>& queue) {
-	webSocket.setOnMessageCallback([this, &queue](const ix::WebSocketMessagePtr& msg) {
-		EventHandler::handleMessage(msg, queue, connected, produced);
+void WebSocketClient::setOnMessage(SPSCQueue<RawMessage, CAPACITY>& eventQueue) {
+	webSocket.setOnMessageCallback([this, &eventQueue](const ix::WebSocketMessagePtr& msg) {
+		EventHandler::handleMessage(msg, eventQueue, connected, produced);
 	});
 }
 WebSocketClient::WebSocketClient(const std::string& url, const std::string& outputPath) : connected(false), snapshotWritten(false), produced(0), outputFile(outputPath) {
@@ -16,8 +17,8 @@ WebSocketClient::WebSocketClient(const std::string& url, const std::string& outp
 WebSocketClient::~WebSocketClient() {
 	webSocket.stop();
 }
-void WebSocketClient::openConnection(SPSCQueue<RawMessage, CAPACITY>& queue) {
-	this->setOnMessage(queue);
+void WebSocketClient::openConnection(SPSCQueue<RawMessage, CAPACITY>& eventQueue) {
+	this->setOnMessage(eventQueue);
 	webSocket.start();
 }
 void WebSocketClient::closeConnection() {

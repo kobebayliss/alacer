@@ -1,8 +1,8 @@
-#include "OrderBookDisplay.hpp"
 #include <iostream>
 #include <format>
 #include <chrono>
 #include <thread>
+#include "OrderBookDisplay.hpp"
 
 namespace {
 	constexpr int PRICE_WIDTH = 12;
@@ -34,8 +34,8 @@ namespace OrderBookDisplay {
 		}
 	}
 	void print(const OrderBook& ob) {
-		std::vector<std::pair<double, double>> bids = ob.get_top_k_levels(DEPTH, BUY).first;
-		std::vector<std::pair<double, double>> asks = ob.get_top_k_levels(DEPTH, SELL).first;
+		std::vector<std::pair<double, double>> bids = ob.get_top_k_levels(DEPTH, Side::BUY).first;
+		std::vector<std::pair<double, double>> asks = ob.get_top_k_levels(DEPTH, Side::SELL).first;
 		std::string ob_display;
 		for (size_t i = 0; i < DEPTH; i++) {
 			ob_display = ob_display + formatLine(bids[i].first, bids[i].second, asks[i].first, asks[i].second);
@@ -45,8 +45,8 @@ namespace OrderBookDisplay {
 		std::cout << ob_display;
 	}
 	void printTopOfBook(const OrderBook& ob) {
-		auto bid = ob.get_top_level(BUY);
-		auto ask = ob.get_top_level(SELL);
+		auto bid = ob.get_top_level(Side::BUY);
+		auto ask = ob.get_top_level(Side::SELL);
 		std::string top_display = formatLine(bid.first, bid.second, ask.first, ask.second);
 
 		std::cout << formatHeader();
