@@ -3,4 +3,4 @@
 #include "../types/OrderIntent.hpp"
 #include "../types/SPSCQueue.hpp"
 
-void strategyLoop(OrderBook& ob, SPSCQueue<OrderIntent, CAPACITY> orderQueue, std::atomic<bool>& running);
+void strategyLoop(OrderBook& ob, SPSCQueue<OrderIntent, CAPACITY>& orderQueue, std::atomic<bool>& running);

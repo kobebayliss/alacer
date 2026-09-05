@@ -19,13 +19,13 @@ void strategyLoop(OrderBook &ob, SPSCQueue<OrderIntent, CAPACITY>& orderQueue, s
 		double bid_volume = top_k_bids.second;
 		double ask_volume = top_k_asks.second;
 		double imbalance = (bid_volume - ask_volume) / (bid_volume + ask_volume);
-		if (imbalance > 0.9 && !holding) {
+		if (imbalance > 0.5 && !holding) {
 			OrderIntent orderDetails{IntentType::PLACE, Side::BUY, top_k_bids.first[0].first, 1, 1};
 			if (!orderQueue.try_push(orderDetails)) {
 				std::cout << "QUEUE FULL: DROPPING ORDER.\n";
 			}
 			holding = true;
-		} else if (imbalance < -0.9 && holding) {
+		} else if (imbalance < -0.5 && holding) {
 			holding = false;
 		}
 	}

@@ -8,6 +8,7 @@
 #include "book/OrderBookBuilder.hpp"
 #include "book/OrderBook.hpp"
 #include "book/OrderBookDisplay.hpp"
+#include "execution/TradeExecution.hpp"
 #include "types/SPSCQueue.hpp"
 #include "types/RawMessage.hpp"
 #include "types/OrderIntent.hpp"
@@ -24,7 +25,7 @@ static void signalShutdown(OrderBook& ob, std::atomic<bool>& running) {
 	ob.updated.notify_all();
 }
 
-static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue) {
+static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, SPSCQueue<OrderIntent, CAPACITY>& orderQueue) {
 	FILE* dataFile = fopen("marketdata.json", "rb");
 	if (!dataFile) {
 		std::cerr << "Error: could not open backtest data file\n";
@@ -37,7 +38,7 @@ static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQue
 	std::atomic<bool> running = true;
 	auto producer = std::async(std::launch::async, backtestJsonFile, std::ref(dataFile), std::ref(eventQueue));
 	auto consumer = std::async(std::launch::async, bookUpdater, std::ref(eventQueue), std::ref(ob), std::ref(running), lastUpdateId, static_cast<std::ofstream*>(nullptr));
-	std::thread strategy(strategyLoop, std::ref(ob), std::ref(running));
+	std::thread strategy(strategyLoop, std::ref(ob), std::ref(orderQueue), std::ref(running));
 
 	std::cin.get();
 	signalShutdown(ob, running);
@@ -49,7 +50,7 @@ static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQue
 	fclose(dataFile);
 }
 
-static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue) {
+static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, SPSCQueue<OrderIntent, CAPACITY>& orderQueue) {
 	WebSocketClient ws("wss://stream.testnet.binance.vision/ws/btcusdt@depth@100ms", "data/marketdata.json");
 
 	ws.openConnection(eventQueue);
@@ -64,12 +65,14 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue) 
 	std::atomic<bool> running = true;
 	auto consumer = std::async(std::launch::async, bookUpdater, std::ref(eventQueue), std::ref(ob), std::ref(running), lastUpdateId, &ws.outputFile);
 	std::thread display(OrderBookDisplay::printLoop, std::ref(ob), std::ref(running));
-	std::thread strategy(strategyLoop, std::ref(ob), std::ref(running));
+	std::thread strategy(strategyLoop, std::ref(ob), std::ref(orderQueue), std::ref(running));
+	std::thread execution(executionLoop, std::ref(orderQueue), std::ref(running));
 
 	std::cin.get();
 	ws.closeConnection();
 	signalShutdown(ob, running);
 	strategy.join();
+	execution.join();
 	display.join();
 
 	std::cout << "producer writes: " << ws.produced << '\n';
@@ -82,9 +85,9 @@ int main() {
 	SPSCQueue<OrderIntent, CAPACITY> orderQueue{};
 	
 	if (BACKTESTING_MODE) {
-		runBacktest(ob, eventQueue);
+		runBacktest(ob, eventQueue, orderQueue);
 	} else {
-		runLive(ob, eventQueue);
+		runLive(ob, eventQueue, orderQueue);
 	}
 
 	return 0;

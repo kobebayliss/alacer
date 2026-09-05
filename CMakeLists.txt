@@ -31,6 +31,7 @@ add_executable(alacer
     src/feed/EventHandler.cpp
     src/feed/BookUpdater.cpp
     src/execution/Strategy.cpp
+    src/execution/TradeExecution.cpp
     src/main.cpp
 )
 target_include_directories(alacer PRIVATE /opt/homebrew/include)
