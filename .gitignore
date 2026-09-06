@@ -1,6 +1,9 @@
 # Prerequisites
 *.d
 
+# env files
+.env
+
 # Dataset files
 data/
 

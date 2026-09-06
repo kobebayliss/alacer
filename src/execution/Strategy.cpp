@@ -6,8 +6,6 @@
 
 void strategyLoop(OrderBook &ob, SPSCQueue<OrderIntent, CAPACITY>& orderQueue, std::atomic<bool> &running) {
 	bool holding = false;
-	double profit = 0.0;
-	std::ofstream outputFile("data/trades.txt");
 	while (running) {
 		ob.updated.wait(false, std::memory_order_acquire);
 		ob.updated.store(false, std::memory_order_relaxed);
@@ -29,6 +27,4 @@ void strategyLoop(OrderBook &ob, SPSCQueue<OrderIntent, CAPACITY>& orderQueue, s
 			holding = false;
 		}
 	}
-	outputFile << "PROFIT: $" << profit;
-	outputFile.close();
 }

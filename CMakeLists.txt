@@ -21,6 +21,8 @@ FetchContent_MakeAvailable(ixwebsocket)
 
 find_package(cpr REQUIRED)
 find_package(RapidJSON REQUIRED)
+find_package(OpenSSL REQUIRED)
+
 add_executable(alacer
     src/backtesting/BacktestDataFeed.cpp
     src/backtesting/BacktestEventHandler.cpp
@@ -45,6 +47,7 @@ target_compile_options(alacer PRIVATE
 target_link_libraries(alacer PRIVATE 
 	cpr::cpr
 	ixwebsocket
+	OpenSSL::Crypto
 )
 option(ENABLE_ASAN "Build with AddressSanitizer" OFF)
 

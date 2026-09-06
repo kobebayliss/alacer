@@ -1,4 +1,6 @@
+#include <cpr/parameters.h>
 #include <ixwebsocket/IXWebSocket.h>
+#include <cpr/cpr.h>
 #include <iostream>
 #include <string>
 #include <functional>
@@ -83,7 +85,7 @@ int main() {
 	OrderBook ob{"BTCUSDT"};
 	SPSCQueue<RawMessage, CAPACITY> eventQueue{};
 	SPSCQueue<OrderIntent, CAPACITY> orderQueue{};
-	
+
 	if (BACKTESTING_MODE) {
 		runBacktest(ob, eventQueue, orderQueue);
 	} else {
