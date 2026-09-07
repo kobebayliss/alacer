@@ -41,7 +41,7 @@ std::string sideToString(Side side) {
 	return "SELL";
 }
 
-void executionLoop(SPSCQueue<OrderIntent, CAPACITY>& orderQueue, orderStatus& status, std::atomic<bool>& running) {
+void executionLoop(SPSCQueue<OrderIntent, CAPACITY>& orderQueue, std::atomic<bool>& running) {
 	auto keys = getBinanceKeys();
 	const std::string apiKey = keys[0];
 	const std::string secretKey = keys[1];
@@ -51,11 +51,6 @@ void executionLoop(SPSCQueue<OrderIntent, CAPACITY>& orderQueue, orderStatus& st
 		auto orderDetails = orderQueue.try_pop();
 		if (!orderDetails) {  // order queue is empty
 			continue;
-		}
-		if (orderDetails->side == Side::BUY) {
-			status = orderStatus::PLACED_BUY;
-		} else {
-			status = orderStatus::PLACED_SELL;
 		}
 		std::string timestamp = std::to_string(getTimestampMillis());
 		std::string queryString = 
@@ -74,6 +69,7 @@ void executionLoop(SPSCQueue<OrderIntent, CAPACITY>& orderQueue, orderStatus& st
 		);
 		std::string data = r.text;
 		outputFile << data << '\n';
+		std::cout << "TRADE EXECUTED" << '\n';
 	}
 	outputFile.close();
 }

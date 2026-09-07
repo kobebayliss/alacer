@@ -10,6 +10,7 @@
 #include "book/OrderBookBuilder.hpp"
 #include "book/OrderBook.hpp"
 #include "book/OrderBookDisplay.hpp"
+#include "execution/AccountData.hpp"
 #include "execution/TradeExecution.hpp"
 #include "types/SPSCQueue.hpp"
 #include "types/RawMessage.hpp"
@@ -82,15 +83,16 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, 
 }
 
 int main() {
-	OrderBook ob{"BTCUSDT"};
-	SPSCQueue<RawMessage, CAPACITY> eventQueue{};
-	SPSCQueue<OrderIntent, CAPACITY> orderQueue{};
-
-	if (BACKTESTING_MODE) {
-		runBacktest(ob, eventQueue, orderQueue);
-	} else {
-		runLive(ob, eventQueue, orderQueue);
-	}
-
+	// OrderBook ob{"BTCUSDT"};
+	// SPSCQueue<RawMessage, CAPACITY> eventQueue{};
+	// SPSCQueue<OrderIntent, CAPACITY> orderQueue{};
+	//
+	// if (BACKTESTING_MODE) {
+	// 	runBacktest(ob, eventQueue, orderQueue);
+	// } else {
+	// 	runLive(ob, eventQueue, orderQueue);
+	// }
+	//
+	std::cout << getAccountData();
 	return 0;
 }
