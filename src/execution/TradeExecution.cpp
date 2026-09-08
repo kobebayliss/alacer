@@ -18,18 +18,18 @@ std::array<std::string, 2> getBinanceKeys() {
 }
 
 std::string hmacSha256Hex(const std::string& key, const std::string& data) {
-    unsigned char* digest = HMAC(
-        EVP_sha256(),
-        key.c_str(), key.size(),
-        reinterpret_cast<const unsigned char*>(data.c_str()), data.size(),
-        nullptr, nullptr
-    );
+	unsigned char* digest = HMAC(
+		EVP_sha256(),
+		key.c_str(), key.size(),
+		reinterpret_cast<const unsigned char*>(data.c_str()), data.size(),
+		nullptr, nullptr
+	);
 
-    std::ostringstream oss;
-    for (int i = 0; i < 32; ++i) { // SHA256 = 32 bytes
-        oss << std::hex << std::setw(2) << std::setfill('0') << (int)digest[i];
-    }
-    return oss.str();
+	std::ostringstream oss;
+	for (int i = 0; i < 32; ++i) { // SHA256 = 32 bytes
+		oss << std::hex << std::setw(2) << std::setfill('0') << (int)digest[i];
+	}
+	return oss.str();
 }
 
 int64_t getTimestampMillis() {

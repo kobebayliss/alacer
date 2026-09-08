@@ -4,5 +4,6 @@
 #include "../types/RawMessage.hpp"
 
 namespace EventHandler {
-	void handleMessage(const ix::WebSocketMessagePtr& msg, SPSCQueue<RawMessage, CAPACITY>& eventQueue, std::atomic<bool>& connected, uint64_t& produced);
+	void handleDepthUpdate(const ix::WebSocketMessagePtr& msg, SPSCQueue<RawMessage, CAPACITY>& eventQueue);
+	void handleUserDataUpdate(const ix::WebSocketMessagePtr& msg);
 }

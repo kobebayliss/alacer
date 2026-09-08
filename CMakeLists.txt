@@ -35,6 +35,7 @@ add_executable(alacer
     src/execution/Strategy.cpp
     src/execution/TradeExecution.cpp
     src/execution/AccountData.cpp
+    src/execution/UserDataStream.cpp
     src/main.cpp
 )
 target_include_directories(alacer PRIVATE /opt/homebrew/include)
