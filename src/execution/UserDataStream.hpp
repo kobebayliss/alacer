@@ -1,3 +1,4 @@
 #pragma once
+#include <string>
 
-void userDataStream();
+std::string generateUserDataRequest();

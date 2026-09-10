@@ -31,12 +31,17 @@ public:
 			handler(msg);
 			++produced;
 		});
+	}
+	void start() {
 		webSocket.start();
 	}
 	void closeConnection() {
 		webSocket.stop();
 		connected.store(false, std::memory_order_release);
 		outputFile.close();
+	}
+	void sendMessage(const std::string& message) {
+		webSocket.send(message);
 	}
 	void writeSnapshot(const std::string& snapshotJson) {
 		outputFile << snapshotJson << '\n';

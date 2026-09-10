@@ -69,9 +69,12 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, 
 
 	std::thread connectDepthStream([&]() {
 		depthStream.openConnection();
+		depthStream.start();
 	});
 	std::thread connectUserDataStream([&]() {
 		userDataStream.openConnection();
+		userDataStream.sendMessage(generateUserDataRequest());
+		userDataStream.start();
 	});
 	while (!depthStream.isConnected() || !userDataStream.isConnected()) {
 		std::this_thread::yield();
