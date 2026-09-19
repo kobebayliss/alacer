@@ -1,7 +1,6 @@
 #include "Strategy.hpp"
 #include <atomic>
 #include <iostream>
-#include <fstream>
 #include "../types/OrderIntent.hpp"
 
 void strategyLoop(OrderBook &ob, SPSCQueue<OrderIntent, CAPACITY>& orderQueue, std::atomic<bool> &running) {

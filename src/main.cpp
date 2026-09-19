@@ -10,9 +10,7 @@
 #include "book/OrderBookBuilder.hpp"
 #include "book/OrderBook.hpp"
 #include "book/OrderBookDisplay.hpp"
-#include "execution/AccountData.hpp"
-#include "execution/TradeExecution.hpp"
-#include "execution/UserDataStream.hpp"
+#include "execution/BinanceAuth.hpp"
 #include "feed/EventHandler.hpp"
 #include "types/SPSCQueue.hpp"
 #include "types/RawMessage.hpp"
@@ -90,13 +88,12 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, 
 	auto consumer = std::async(std::launch::async, bookUpdater, std::ref(eventQueue), std::ref(ob), std::ref(running), lastUpdateId, &depthStream.outputFile);
 	std::thread display(OrderBookDisplay::printLoop, std::ref(ob), std::ref(running));
 	std::thread strategy(strategyLoop, std::ref(ob), std::ref(orderQueue), std::ref(running));
-	std::thread execution(executionLoop, std::ref(orderQueue), std::ref(running));
 
 	std::cin.get();
 	depthStream.closeConnection();
+	userDataStream.closeConnection();
 	signalShutdown(ob, running);
 	strategy.join();
-	execution.join();
 	display.join();
 
 	std::cout << "producer writes: " << depthStream.produced << '\n';

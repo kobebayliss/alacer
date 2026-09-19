@@ -29,7 +29,6 @@ add_executable(alacer
     src/book/OrderBook.cpp
     src/book/OrderBookBuilder.cpp
     src/book/OrderBookDisplay.cpp
-    src/feed/WebSocketClient.cpp
     src/feed/EventHandler.cpp
     src/feed/BookUpdater.cpp
     src/execution/Strategy.cpp
