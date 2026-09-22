@@ -19,6 +19,14 @@ set(USE_TLS ON CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(ixwebsocket)
 
+FetchContent_Declare(
+    stduuid
+    GIT_REPOSITORY https://github.com/mariusbancila/stduuid.git
+    GIT_TAG        v1.2.3
+)
+set(UUID_SYSTEM_GENERATOR ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(stduuid)
+
 find_package(cpr REQUIRED)
 find_package(RapidJSON REQUIRED)
 find_package(OpenSSL REQUIRED)
@@ -31,10 +39,9 @@ add_executable(alacer
     src/book/OrderBookDisplay.cpp
     src/feed/EventHandler.cpp
     src/feed/BookUpdater.cpp
+    src/feed/BinanceAuth.cpp
     src/execution/Strategy.cpp
     src/execution/TradeExecution.cpp
-    src/execution/AccountData.cpp
-    src/execution/UserDataStream.cpp
     src/main.cpp
 )
 target_include_directories(alacer PRIVATE /opt/homebrew/include)
@@ -49,6 +56,7 @@ target_link_libraries(alacer PRIVATE
 	cpr::cpr
 	ixwebsocket
 	OpenSSL::Crypto
+	stduuid
 )
 option(ENABLE_ASAN "Build with AddressSanitizer" OFF)
 

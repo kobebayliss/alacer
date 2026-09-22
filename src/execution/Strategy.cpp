@@ -3,7 +3,8 @@
 #include <iostream>
 #include "../types/OrderIntent.hpp"
 
-void strategyLoop(OrderBook &ob, SPSCQueue<OrderIntent, CAPACITY>& orderQueue, std::atomic<bool> &running) {
+void strategyLoop(OrderBook &ob, SPSCQueue<OrderIntent, CAPACITY>& orderQueue, std::atomic<bool> &running, std::atomic<OrderStatus>& orderStatus) {
+	// update with orderStatus
 	bool holding = false;
 	while (running) {
 		ob.updated.wait(false, std::memory_order_acquire);

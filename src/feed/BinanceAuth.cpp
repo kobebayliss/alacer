@@ -3,6 +3,7 @@
 #include <ixwebsocket/IXWebSocket.h>
 #include <openssl/hmac.h>
 #include <string>
+#include <uuid.h>
 #include "BinanceAuth.hpp"
 
 std::array<std::string, 2> getBinanceKeys() {
@@ -43,15 +44,20 @@ std::string generateUserDataSignature(const std::string& queryString) {
 	const std::string secretKey = keys[1];
 	std::string signature = hmacSha256Hex(secretKey, queryString);
 	// for user data stream
-	// std::string queryString = "apiKey=" + apiKey + "&timestamp=" + std::to_string(timestamp);  
-	// request << "{"
-	// 	<< "\"id\":\"userdatastream-sub-1\","
-	// 	<< "\"method\":\"userDataStream.subscribe.signature\","
-	// 	<< "\"params\":{"
-	// 	    << "\"apiKey\":\"" << apiKey << "\","
-	// 	    << "\"timestamp\":" << timestamp << ","
-	// 	    << "\"signature\":\"" << signature << "\""
-	// 	<< "}"
-	// 	<< "}";
 	return signature;
+}
+
+std::string generateRequestId() {
+	uuids::uuid const id = uuids::uuid_system_generator{}();
+	return uuids::to_string(id);
+}
+
+std::string generateUserStreamRequest() {
+	std::ostringstream request;
+	request << "{"
+	    << "\"id\":\"" << generateRequestId() << "\","
+	    << "\"method\":\"userDataStream.subscribe\","
+	    << "\"params\":{}"
+	    << "}";
+	return request.str();
 }

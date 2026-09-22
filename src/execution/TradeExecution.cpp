@@ -2,14 +2,14 @@
 #include <iostream>
 #include <string>
 #include "TradeExecution.hpp"
-#include "BinanceAuth.hpp"
+#include "../feed/BinanceAuth.hpp"
 
 std::string sideToString(Side side) {
 	if (side == Side::BUY) return "BUY";
 	return "SELL";
 }
 
-void executionLoop(SPSCQueue<OrderIntent, CAPACITY>& orderQueue, std::atomic<bool>& running) {
+void executionLoop(SPSCQueue<OrderIntent, CAPACITY>& orderQueue, std::atomic<bool>& running, std::atomic<OrderStatus>& orderStatus) {
 	std::ofstream outputFile("data/trades.txt");
 	while (running) {
 		auto orderDetails = orderQueue.try_pop();
