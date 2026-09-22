@@ -14,6 +14,7 @@ void executionLoop(SPSCQueue<OrderIntent, CAPACITY>& orderQueue, std::atomic<boo
 	while (running) {
 		auto orderDetails = orderQueue.try_pop();
 		if (!orderDetails) {  // order queue is empty
+			std::this_thread::sleep_for(std::chrono::microseconds(100));
 			continue;
 		}
 		// adjust so we are not reconstructing this signature each time? only change timestamp, price, quantity
