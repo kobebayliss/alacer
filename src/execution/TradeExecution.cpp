@@ -9,7 +9,7 @@ std::string sideToString(Side side) {
 	return "SELL";
 }
 
-void executionLoop(SPSCQueue<OrderIntent, CAPACITY>& orderQueue, std::atomic<bool>& running, std::atomic<OrderStatus>& orderStatus) {
+void executionLoop(SPSCQueue<OrderIntent, CAPACITY>& orderQueue, std::atomic<bool>& running) {
 	std::ofstream outputFile("data/trades.txt");
 	while (running) {
 		auto orderDetails = orderQueue.try_pop();

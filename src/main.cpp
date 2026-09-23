@@ -18,7 +18,6 @@
 #include "types/WebSocketClient.hpp"
 #include "feed/BookUpdater.hpp"
 #include "execution/Strategy.hpp"
-#include "types/OrderStatus.hpp"
 
 const bool BACKTESTING_MODE = false;
 
@@ -43,7 +42,7 @@ static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQue
 	std::atomic<bool> running = true;
 	auto producer = std::async(std::launch::async, backtestJsonFile, std::ref(dataFile), std::ref(eventQueue));
 	auto consumer = std::async(std::launch::async, bookUpdater, std::ref(eventQueue), std::ref(ob), std::ref(running), lastUpdateId, static_cast<std::ofstream*>(nullptr));
-	std::thread strategy(strategyLoop, std::ref(ob), std::ref(orderQueue), std::ref(running), std::ref(orderStatus));
+	std::thread strategy(strategyLoop, std::ref(ob), std::ref(orderQueue), std::ref(running));
 
 	std::cin.get();
 	signalShutdown(ob, running);
@@ -63,8 +62,8 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, 
 		}
 	);
 	WebSocketClient userDataStream("wss://ws-api.testnet.binance.vision:443/ws-api/v3", "data/userdata.json",
-		[&orderStatus](const ix::WebSocketMessagePtr& msg) {
-			EventHandler::handleUserDataUpdate(msg, orderStatus);
+		[](const ix::WebSocketMessagePtr& msg) {
+			EventHandler::handleUserDataUpdate(msg);
 		}
 	);
 
@@ -90,7 +89,7 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, 
 	std::atomic<bool> running = true;
 	auto consumer = std::async(std::launch::async, bookUpdater, std::ref(eventQueue), std::ref(ob), std::ref(running), lastUpdateId, &depthStream.outputFile);
 	std::thread display(OrderBookDisplay::printLoop, std::ref(ob), std::ref(running));
-	std::thread strategy(strategyLoop, std::ref(ob), std::ref(orderQueue), std::ref(running), std::ref(orderStatus));
+	std::thread strategy(strategyLoop, std::ref(ob), std::ref(orderQueue), std::ref(running));
 
 	std::cin.get();
 	depthStream.closeConnection();

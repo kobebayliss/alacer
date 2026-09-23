@@ -12,7 +12,7 @@ namespace EventHandler {
 			std::cout << "QUEUE FULL: DROPPING MESSAGE.\n";
 		}
 	}
-	void handleUserDataUpdate(const ix::WebSocketMessagePtr& msg, std::atomic<OrderStatus>& orderStatus) { 
+	void handleUserDataUpdate(const ix::WebSocketMessagePtr& msg) { 
 		// logic for recieving user data events (no queue, do it in here as updates will be infrequent)
 	}
 }

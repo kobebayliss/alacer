@@ -6,5 +6,5 @@
 
 namespace EventHandler {
 	void handleDepthUpdate(const ix::WebSocketMessagePtr& msg, SPSCQueue<RawMessage, CAPACITY>& eventQueue);
-	void handleUserDataUpdate(const ix::WebSocketMessagePtr& msg, std::atomic<OrderStatus>& orderStatus);
+	void handleUserDataUpdate(const ix::WebSocketMessagePtr& msg);
 }
