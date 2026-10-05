@@ -1,0 +1,3 @@
+#pragma once
+
+enum class OrderState { PENDING_NEW, WORKING, PARTIALLY_FILLED, FILLED, REJECTED, CANCELED };

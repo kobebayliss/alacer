@@ -29,7 +29,6 @@ static void signalShutdown(OrderBook& ob, std::atomic<bool>& running) {
 }
 
 static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, SPSCQueue<OrderIntent, CAPACITY>& orderQueue) {
-	std::atomic<OrderStatus> orderStatus = OrderStatus::NOT_HOLDING;
 	FILE* dataFile = fopen("marketdata.json", "rb");
 	if (!dataFile) {
 		std::cerr << "Error: could not open backtest data file\n";
@@ -55,7 +54,6 @@ static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQue
 }
 
 static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, SPSCQueue<OrderIntent, CAPACITY>& orderQueue) {
-	std::atomic<OrderStatus> orderStatus = OrderStatus::NOT_HOLDING;
 	WebSocketClient depthStream("wss://stream.testnet.binance.vision/ws/btcusdt@depth@100ms", "data/marketdata.json", 
 		[&eventQueue](const ix::WebSocketMessagePtr& msg) {
 			EventHandler::handleDepthUpdate(msg, eventQueue);

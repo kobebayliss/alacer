@@ -1,7 +1,7 @@
 #include <cpr/cpr.h>
 #include <iostream>
 #include <string>
-#include "TradeExecution.hpp"
+#include "OrderManager.hpp"
 #include "../feed/BinanceAuth.hpp"
 
 std::string sideToString(Side side) {

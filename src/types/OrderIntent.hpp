@@ -1,5 +1,5 @@
 #pragma once
-#include <functional>
+#include <cstdint>
 #include "Side.hpp"
 
 enum class IntentType { PLACE, CANCEL };

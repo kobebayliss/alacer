@@ -24,7 +24,6 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/mariusbancila/stduuid.git
     GIT_TAG        v1.2.3
 )
-set(UUID_SYSTEM_GENERATOR ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(stduuid)
 
 find_package(cpr REQUIRED)

@@ -4,6 +4,7 @@
 #include <openssl/hmac.h>
 #include <string>
 #include <uuid.h>
+#include <random>
 #include "BinanceAuth.hpp"
 
 std::array<std::string, 2> getBinanceKeys() {
@@ -48,8 +49,17 @@ std::string generateUserDataSignature(const std::string& queryString) {
 }
 
 std::string generateRequestId() {
-	uuids::uuid const id = uuids::uuid_system_generator{}();
-	return uuids::to_string(id);
+    static std::random_device rd;
+    static auto seed_data = std::array<int, std::mt19937::state_size>{};
+    static bool seeded = [] {
+        std::generate(seed_data.begin(), seed_data.end(), std::ref(rd));
+        return true;
+    }();
+    static std::seed_seq seq(seed_data.begin(), seed_data.end());
+    static std::mt19937 generator(seq);
+    static uuids::uuid_random_generator gen(generator);
+
+    return uuids::to_string(gen());
 }
 
 std::string generateUserStreamRequest() {

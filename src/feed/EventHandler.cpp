@@ -13,6 +13,6 @@ namespace EventHandler {
 		}
 	}
 	void handleUserDataUpdate(const ix::WebSocketMessagePtr& msg) { 
-		// logic for recieving user data events (no queue, do it in here as updates will be infrequent)
+		// add to user data stream queue (consumed by OMS thread)
 	}
 }
