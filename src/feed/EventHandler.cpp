@@ -12,7 +12,8 @@ namespace EventHandler {
 			std::cout << "QUEUE FULL: DROPPING MESSAGE.\n";
 		}
 	}
-	void handleUserDataUpdate(const ix::WebSocketMessagePtr& msg) { 
+	// replace OrderIntent with shape for updates from binance
+	void handleUserDataUpdate(const ix::WebSocketMessagePtr& msg, SPSCQueue<OrderIntent, CAPACITY>& updateQueue) { 
 		// add to user data stream queue (consumed by OMS thread)
 	}
 }

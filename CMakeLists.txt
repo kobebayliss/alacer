@@ -40,7 +40,7 @@ add_executable(alacer
     src/feed/BookUpdater.cpp
     src/feed/BinanceAuth.cpp
     src/execution/Strategy.cpp
-    src/execution/TradeExecution.cpp
+    src/execution/OrderManager.cpp
     src/main.cpp
 )
 target_include_directories(alacer PRIVATE /opt/homebrew/include)

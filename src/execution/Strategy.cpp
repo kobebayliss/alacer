@@ -3,7 +3,7 @@
 #include <iostream>
 #include "../types/OrderIntent.hpp"
 
-void strategyLoop(OrderBook &ob, SPSCQueue<OrderIntent, CAPACITY>& orderQueue, std::atomic<bool> &running) {
+void strategyLoop(OrderBook &ob, SPSCQueue<OrderIntent, CAPACITY>& intentQueue, std::atomic<bool> &running) {
 	bool holding = false;
 	while (running) {
 		ob.updated.wait(false, std::memory_order_acquire);
@@ -18,13 +18,13 @@ void strategyLoop(OrderBook &ob, SPSCQueue<OrderIntent, CAPACITY>& orderQueue, s
 		double imbalance = (bid_volume - ask_volume) / (bid_volume + ask_volume);
 		if (imbalance > 0.5 && !holding) {
 			OrderIntent orderDetails{IntentType::PLACE, Side::BUY, top_k_bids.first[0].first, 0.01, 1};
-			if (!orderQueue.try_push(orderDetails)) {
+			if (!intentQueue.try_push(orderDetails)) {
 				std::cout << "QUEUE FULL: DROPPING ORDER.\n";
 			}
 			holding = true;
 		} else if (imbalance < -0.5 && holding) {
 			OrderIntent orderDetails{IntentType::PLACE, Side::SELL, top_k_asks.first[0].first, 0.01, 1};
-			if (!orderQueue.try_push(orderDetails)) {
+			if (!intentQueue.try_push(orderDetails)) {
 				std::cout << "QUEUE FULL: DROPPING ORDER.\n";
 			}
 			holding = false;

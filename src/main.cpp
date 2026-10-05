@@ -28,7 +28,7 @@ static void signalShutdown(OrderBook& ob, std::atomic<bool>& running) {
 	ob.updated.notify_all();
 }
 
-static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, SPSCQueue<OrderIntent, CAPACITY>& orderQueue) {
+static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, SPSCQueue<OrderIntent, CAPACITY>& intentQueue) {
 	FILE* dataFile = fopen("marketdata.json", "rb");
 	if (!dataFile) {
 		std::cerr << "Error: could not open backtest data file\n";
@@ -41,7 +41,7 @@ static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQue
 	std::atomic<bool> running = true;
 	auto producer = std::async(std::launch::async, backtestJsonFile, std::ref(dataFile), std::ref(eventQueue));
 	auto consumer = std::async(std::launch::async, bookUpdater, std::ref(eventQueue), std::ref(ob), std::ref(running), lastUpdateId, static_cast<std::ofstream*>(nullptr));
-	std::thread strategy(strategyLoop, std::ref(ob), std::ref(orderQueue), std::ref(running));
+	std::thread strategy(strategyLoop, std::ref(ob), std::ref(intentQueue), std::ref(running));
 
 	std::cin.get();
 	signalShutdown(ob, running);
@@ -53,15 +53,15 @@ static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQue
 	fclose(dataFile);
 }
 
-static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, SPSCQueue<OrderIntent, CAPACITY>& orderQueue) {
+static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<OrderIntent, CAPACITY>& updateQueue) {
 	WebSocketClient depthStream("wss://stream.testnet.binance.vision/ws/btcusdt@depth@100ms", "data/marketdata.json", 
 		[&eventQueue](const ix::WebSocketMessagePtr& msg) {
 			EventHandler::handleDepthUpdate(msg, eventQueue);
 		}
 	);
 	WebSocketClient userDataStream("wss://ws-api.testnet.binance.vision:443/ws-api/v3", "data/userdata.json",
-		[](const ix::WebSocketMessagePtr& msg) {
-			EventHandler::handleUserDataUpdate(msg);
+		[&updateQueue](const ix::WebSocketMessagePtr& msg) {
+			EventHandler::handleUserDataUpdate(msg, updateQueue);
 		}
 	);
 
@@ -87,7 +87,7 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, 
 	std::atomic<bool> running = true;
 	auto consumer = std::async(std::launch::async, bookUpdater, std::ref(eventQueue), std::ref(ob), std::ref(running), lastUpdateId, &depthStream.outputFile);
 	std::thread display(OrderBookDisplay::printLoop, std::ref(ob), std::ref(running));
-	std::thread strategy(strategyLoop, std::ref(ob), std::ref(orderQueue), std::ref(running));
+	std::thread strategy(strategyLoop, std::ref(ob), std::ref(intentQueue), std::ref(running));
 
 	std::cin.get();
 	depthStream.closeConnection();
@@ -103,12 +103,13 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, 
 int main() {
 	OrderBook ob{"BTCUSDT"};
 	SPSCQueue<RawMessage, CAPACITY> eventQueue{};
-	SPSCQueue<OrderIntent, CAPACITY> orderQueue{};
+	SPSCQueue<OrderIntent, CAPACITY> intentQueue{};
+	SPSCQueue<OrderIntent, CAPACITY> updateQueue{};
 
 	if (BACKTESTING_MODE) {
-		runBacktest(ob, eventQueue, orderQueue);
+		runBacktest(ob, eventQueue, intentQueue);
 	} else {
-		runLive(ob, eventQueue, orderQueue);
+		runLive(ob, eventQueue, intentQueue, updateQueue);
 	}
 
 	return 0;
