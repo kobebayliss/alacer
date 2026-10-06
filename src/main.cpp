@@ -1,3 +1,4 @@
+#include <chrono>
 #include <cpr/parameters.h>
 #include <ixwebsocket/IXWebSocket.h>
 #include <cpr/cpr.h>
@@ -6,6 +7,7 @@
 #include <functional>
 #include <atomic>
 #include <future>
+#include <thread>
 #include "backtesting/BacktestDataFeed.hpp"
 #include "book/OrderBookBuilder.hpp"
 #include "book/OrderBook.hpp"
@@ -71,7 +73,10 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, 
 	});
 	std::thread connectUserDataStream([&]() {
 		userDataStream.openConnection();
-		userDataStream.sendMessage(generateUserStreamRequest());
+		while (!userDataStream.isConnected()) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(10)); // spin to avoid race cond
+		}
+		userDataStream.sendMessage(generateSessionLogonRequest());
 		userDataStream.start();
 	});
 	while (!depthStream.isConnected() || !userDataStream.isConnected()) {

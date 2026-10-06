@@ -14,6 +14,7 @@ namespace EventHandler {
 	}
 	// replace OrderIntent with shape for updates from binance
 	void handleUserDataUpdate(const ix::WebSocketMessagePtr& msg, SPSCQueue<OrderIntent, CAPACITY>& updateQueue) { 
-		// add to user data stream queue (consumed by OMS thread)
+		// add to update stream queue (consumed by OMS thread)
+		std::cout << msg->str.data();
 	}
 }
