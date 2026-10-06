@@ -28,7 +28,6 @@ namespace OrderBookDisplay {
 	const uint64_t UPDATE_INTERVAL_MS = 500;
 	void printLoop(const OrderBook& ob, std::atomic<bool>& running) {
 		while (running) {
-			std::cout << "\033[H\033[J";
 			print(ob);
 			std::this_thread::sleep_for(std::chrono::milliseconds(UPDATE_INTERVAL_MS));
 		}

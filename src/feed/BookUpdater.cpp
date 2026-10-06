@@ -15,9 +15,14 @@ uint64_t bookUpdater(SPSCQueue<RawMessage, CAPACITY> &eventQueue, OrderBook &ob,
 
 		rapidjson::Document document;
 		document.Parse(raw->data, raw->length);
-		if (document.HasParseError()) {
-			std::cout << "parse error\n";
-			continue;
+		if (document.HasParseError() || !document.IsObject()) {
+		    std::cout << "parse error or unexpected shape\n";
+		    continue;
+		}
+		if (!document.HasMember("U") || !document.HasMember("u") ||
+		    !document.HasMember("b") || !document.HasMember("a")) {
+		    std::cout << "missing expected fields\n";
+		    continue;
 		}
 		uint64_t U = document["U"].GetUint64();
 		uint64_t u = document["u"].GetUint64();

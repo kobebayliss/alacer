@@ -9,3 +9,4 @@ std::string generateRequestId();
 std::array<std::string, 2> getBinanceEd25519Keys();
 std::string signEd25519Base64(const std::string& privateKeyPath, const std::string& data);
 std::string generateSessionLogonRequest();
+std::string generateUserStreamRequest();

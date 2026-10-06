@@ -2,6 +2,7 @@
 #include <cpr/parameters.h>
 #include <ixwebsocket/IXWebSocket.h>
 #include <cpr/cpr.h>
+#include <rapidjson/document.h>
 #include <iostream>
 #include <string>
 #include <functional>
@@ -14,6 +15,7 @@
 #include "book/OrderBookDisplay.hpp"
 #include "feed/BinanceAuth.hpp"
 #include "feed/EventHandler.hpp"
+#include "ixwebsocket/IXWebSocketMessage.h"
 #include "types/SPSCQueue.hpp"
 #include "types/RawMessage.hpp"
 #include "types/OrderIntent.hpp"
@@ -61,11 +63,26 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, 
 			EventHandler::handleDepthUpdate(msg, eventQueue);
 		}
 	);
+	bool subscribed = false;
+	WebSocketClient* userDataStreamPtr = nullptr;
 	WebSocketClient userDataStream("wss://ws-api.testnet.binance.vision:443/ws-api/v3", "data/userdata.json",
-		[&updateQueue](const ix::WebSocketMessagePtr& msg) {
-			EventHandler::handleUserDataUpdate(msg, updateQueue);
+		[&updateQueue, &subscribed, &userDataStreamPtr](const ix::WebSocketMessagePtr& msg) {
+			if (subscribed) {
+				EventHandler::handleUserDataUpdate(msg, updateQueue);
+			} else {
+				if (msg->type == ix::WebSocketMessageType::Message) {
+					rapidjson::Document doc;
+					doc.Parse(msg->str.c_str());
+					if (!doc.HasParseError() && doc.HasMember("status") && doc["status"].GetInt() == 200) {
+						userDataStreamPtr->sendMessage(generateUserStreamRequest());
+						subscribed = true;
+						std::cout << "Logged on, subscribed to user data stream\n";
+					}
+				}
+			}
 		}
 	);
+	userDataStreamPtr = &userDataStream;
 
 	std::thread connectDepthStream([&]() {
 		depthStream.openConnection();
@@ -73,11 +90,11 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, 
 	});
 	std::thread connectUserDataStream([&]() {
 		userDataStream.openConnection();
+		userDataStream.start();
 		while (!userDataStream.isConnected()) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(10)); // spin to avoid race cond
 		}
 		userDataStream.sendMessage(generateSessionLogonRequest());
-		userDataStream.start();
 	});
 	while (!depthStream.isConnected() || !userDataStream.isConnected()) {
 		std::this_thread::yield();

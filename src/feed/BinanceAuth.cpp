@@ -161,3 +161,13 @@ std::string generateSessionLogonRequest() {
             << "}";
     return request.str();
 }
+
+std::string generateUserStreamRequest() {
+	std::ostringstream request;
+	request << "{"
+	    << "\"id\":\"" << generateRequestId() << "\","
+	    << "\"method\":\"userDataStream.subscribe\","
+	    << "\"params\":{}"
+	    << "}";
+	return request.str();
+}
