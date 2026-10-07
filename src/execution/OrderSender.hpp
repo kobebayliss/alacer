@@ -1,6 +1,7 @@
 #pragma once
 #include "../types/SPSCQueue.hpp"
-#include "../types/OrderIntent.hpp"
+#include "../types/OrderTypes.hpp"
 #include <atomic>
 
-void orderSender(SPSCQueue<OrderIntent, CAPACITY>& sendQueue, std::atomic<bool>& running);
+std::string sideToString(Side side);
+void orderSender(SPSCQueue<OrderRequest, CAPACITY>& sendQueue, std::atomic<bool>& running);

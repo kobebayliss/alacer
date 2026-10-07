@@ -18,7 +18,7 @@
 #include "ixwebsocket/IXWebSocketMessage.h"
 #include "types/SPSCQueue.hpp"
 #include "types/RawMessage.hpp"
-#include "types/OrderIntent.hpp"
+#include "types/OrderTypes.hpp"
 #include "types/WebSocketClient.hpp"
 #include "feed/BookUpdater.hpp"
 #include "execution/Strategy.hpp"
@@ -57,7 +57,7 @@ static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQue
 	fclose(dataFile);
 }
 
-static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<OrderIntent, CAPACITY>& sendQueue, SPSCQueue<OrderIntent, CAPACITY>& updateQueue) {
+static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<OrderRequest, CAPACITY>& sendQueue, SPSCQueue<OrderIntent, CAPACITY>& updateQueue) {
 	WebSocketClient depthStream("wss://stream.testnet.binance.vision/ws/btcusdt@depth@100ms", "data/marketdata.json", 
 		[&eventQueue](const ix::WebSocketMessagePtr& msg) {
 			EventHandler::handleDepthUpdate(msg, eventQueue);
@@ -126,7 +126,7 @@ int main() {
 	OrderBook ob{"BTCUSDT"};
 	SPSCQueue<RawMessage, CAPACITY> eventQueue{};
 	SPSCQueue<OrderIntent, CAPACITY> intentQueue{};
-	SPSCQueue<OrderIntent, CAPACITY> sendQueue{};
+	SPSCQueue<OrderRequest, CAPACITY> sendQueue{};
 	SPSCQueue<OrderIntent, CAPACITY> updateQueue{};
 
 	if (BACKTESTING_MODE) {
