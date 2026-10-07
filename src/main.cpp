@@ -57,7 +57,7 @@ static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQue
 	fclose(dataFile);
 }
 
-static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<OrderIntent, CAPACITY>& updateQueue) {
+static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<OrderIntent, CAPACITY>& sendQueue, SPSCQueue<OrderIntent, CAPACITY>& updateQueue) {
 	WebSocketClient depthStream("wss://stream.testnet.binance.vision/ws/btcusdt@depth@100ms", "data/marketdata.json", 
 		[&eventQueue](const ix::WebSocketMessagePtr& msg) {
 			EventHandler::handleDepthUpdate(msg, eventQueue);
@@ -126,12 +126,13 @@ int main() {
 	OrderBook ob{"BTCUSDT"};
 	SPSCQueue<RawMessage, CAPACITY> eventQueue{};
 	SPSCQueue<OrderIntent, CAPACITY> intentQueue{};
+	SPSCQueue<OrderIntent, CAPACITY> sendQueue{};
 	SPSCQueue<OrderIntent, CAPACITY> updateQueue{};
 
 	if (BACKTESTING_MODE) {
 		runBacktest(ob, eventQueue, intentQueue);
 	} else {
-		runLive(ob, eventQueue, intentQueue, updateQueue);
+		runLive(ob, eventQueue, intentQueue, sendQueue, updateQueue);
 	}
 
 	return 0;
