@@ -22,6 +22,8 @@
 #include "types/WebSocketClient.hpp"
 #include "feed/BookUpdater.hpp"
 #include "execution/Strategy.hpp"
+#include "execution/OrderSender.hpp"
+#include "execution/OrderManager.hpp"
 
 const bool BACKTESTING_MODE = false;
 
@@ -108,21 +110,42 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, 
 
 	std::atomic<bool> running = true;
 	auto consumer = std::async(std::launch::async, bookUpdater, std::ref(eventQueue), std::ref(ob), std::ref(running), lastUpdateId, &depthStream.outputFile);
-	std::thread display(OrderBookDisplay::printLoop, std::ref(ob), std::ref(running));
+	// std::thread display(OrderBookDisplay::printLoop, std::ref(ob), std::ref(running));
 	std::thread strategy(strategyLoop, std::ref(ob), std::ref(intentQueue), std::ref(running));
+	std::thread manager(orderManager, std::ref(intentQueue), std::ref(sendQueue), std::ref(updateQueue), std::ref(running));
+	std::thread sender(orderSender, std::ref(sendQueue), std::ref(running));
 
 	std::cin.get();
 	depthStream.closeConnection();
 	userDataStream.closeConnection();
 	signalShutdown(ob, running);
 	strategy.join();
-	display.join();
+	// display.join();
 
 	std::cout << "producer writes: " << depthStream.produced << '\n';
 	std::cout << "consumer reads: "  << consumer.get() << '\n';
 }
 
+static void cancelAllOpenOrders() {
+	std::string queryString =
+		"symbol=BTCUSDT"
+		"&timestamp=" + std::to_string(getTimestampMillis());
+	std::string signature = generateUserDataSignature(queryString);
+
+	cpr::Response r = cpr::Delete(
+		cpr::Url{"https://testnet.binance.vision/api/v3/openOrders?" + queryString + "&signature=" + signature},
+		cpr::Header{{"X-MBX-APIKEY", getBinanceKeys()[0]}}
+	);
+
+	if (r.status_code == 200) {
+		std::cout << "Cancelled all open orders\n";
+	} else {
+		std::cerr << "Cancel failed " << r.status_code << " " << r.text << std::endl;
+	}
+}
+
 int main() {
+	cancelAllOpenOrders();
 	OrderBook ob{"BTCUSDT"};
 	SPSCQueue<RawMessage, CAPACITY> eventQueue{};
 	SPSCQueue<OrderIntent, CAPACITY> intentQueue{};

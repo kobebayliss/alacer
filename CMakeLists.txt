@@ -41,6 +41,7 @@ add_executable(alacer
     src/feed/BinanceAuth.cpp
     src/execution/Strategy.cpp
     src/execution/OrderManager.cpp
+    src/execution/OrderSender.cpp
     src/main.cpp
 )
 target_include_directories(alacer PRIVATE /opt/homebrew/include)

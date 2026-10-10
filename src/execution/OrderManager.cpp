@@ -1,7 +1,9 @@
 #include <cpr/cpr.h>
+#include <cstring>
 #include <iostream>
 #include <string>
 #include "OrderManager.hpp"
+#include "../feed/BinanceAuth.hpp"
 
 // replace OrderIntent with shape for updates from binance
 void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<OrderRequest, CAPACITY>& sendQueue, SPSCQueue<OrderIntent, CAPACITY>& updateQueue, std::atomic<bool>& running) {
@@ -16,8 +18,11 @@ void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<Order
 		// decide if we still want to execute order
 		// hands off order details to network sender thread to not block order manager
 		// construct actual uuid first
-		OrderRequest orderDetails{"1", *intent};
-		if (!sendQueue.try_push(orderDetails)) {
+		OrderRequest request{};
+		std::string id = generateRequestId();
+		memcpy(request.clientOrderId, id.c_str(), id.size() + 1);
+		request.intent = *intent;
+		if (!sendQueue.try_push(request)) {
 			std::cout << "send queue is full.\n";
 		}
 	}

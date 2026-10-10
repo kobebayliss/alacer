@@ -34,7 +34,6 @@ void orderSender(SPSCQueue<OrderRequest, CAPACITY>& sendQueue, std::atomic<bool>
 		);
 		std::string data = r.text;
 		outputFile << data << '\n';
-		std::cout << "TRADE EXECUTED" << '\n';
 	}
 	outputFile.close();
 }
