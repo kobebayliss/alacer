@@ -1,9 +1,14 @@
 #include "Strategy.hpp"
 #include <atomic>
+#include <chrono>
 #include <iostream>
 
 void strategyLoop(OrderBook &ob, SPSCQueue<OrderIntent, CAPACITY>& intentQueue, std::atomic<bool> &running) {
+	const bool TEST_MODE = true;  // true: trade on a timer, ignore imbalance
+	const auto TEST_INTERVAL = std::chrono::seconds(5);
+
 	bool holding = false;
+	auto lastTrade = std::chrono::steady_clock::now() - TEST_INTERVAL;
 	while (running) {
 		ob.updated.wait(false, std::memory_order_acquire);
 		ob.updated.store(false, std::memory_order_relaxed);
@@ -15,25 +20,27 @@ void strategyLoop(OrderBook &ob, SPSCQueue<OrderIntent, CAPACITY>& intentQueue, 
 		double bid_volume = top_k_bids.second;
 		double ask_volume = top_k_asks.second;
 		double imbalance = (bid_volume - ask_volume) / (bid_volume + ask_volume);
-		if (!holding) {
+
+		auto now = std::chrono::steady_clock::now();
+		bool testBuy  = TEST_MODE && !holding && now - lastTrade >= TEST_INTERVAL;
+		bool testSell = TEST_MODE && holding  && now - lastTrade >= TEST_INTERVAL;
+
+		if ((imbalance > 0.8 && !holding && !TEST_MODE) || testBuy) {
 			OrderIntent orderDetails{top_k_bids.first[0].first, 0.01, IntentType::PLACE, Side::BUY};
 			if (!intentQueue.try_push(orderDetails)) {
 				std::cout << "QUEUE FULL: DROPPING ORDER.\n";
+			} else {
+				holding = true;
+				lastTrade = now;
 			}
-			holding = true;
-		}
-		if (imbalance > 0.8 && !holding) {
-			OrderIntent orderDetails{top_k_bids.first[0].first, 0.01, IntentType::PLACE, Side::BUY};
-			if (!intentQueue.try_push(orderDetails)) {
-				std::cout << "QUEUE FULL: DROPPING ORDER.\n";
-			}
-			holding = true;
-		} else if (imbalance < -0.8 && holding) {
+		} else if ((imbalance < -0.8 && holding && !TEST_MODE) || testSell) {
 			OrderIntent orderDetails{top_k_asks.first[0].first, 0.01, IntentType::PLACE, Side::SELL};
 			if (!intentQueue.try_push(orderDetails)) {
 				std::cout << "QUEUE FULL: DROPPING ORDER.\n";
+			} else {
+				holding = false;
+				lastTrade = now;
 			}
-			holding = false;
 		}
 	}
 }

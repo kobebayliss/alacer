@@ -19,11 +19,6 @@ struct OrderRequest {
 	char clientOrderId[CLIENT_ORDER_ID_LENGTH];
 };
 
-struct OrderAck {
-	char clientOrderId[CLIENT_ORDER_ID_LENGTH];
-	bool success;
-};
-
 struct OrderUpdate {
 	OrderState newState;
 	double filledPrice;

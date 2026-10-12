@@ -122,6 +122,8 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, 
 	signalShutdown(ob, running);
 	strategy.join();
 	// display.join();
+	manager.join();
+	sender.join();
 
 	std::cout << "producer writes: " << depthStream.produced << '\n';
 	std::cout << "consumer reads: "  << consumer.get() << '\n';
