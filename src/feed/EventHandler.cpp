@@ -1,6 +1,8 @@
 #include <atomic>
 #include <memory.h>
 #include <iostream>
+#include <fstream>
+#include <string>
 #include "EventHandler.hpp"
 
 namespace EventHandler {
@@ -16,8 +18,8 @@ namespace EventHandler {
 		}
 	}
 	// replace OrderIntent with shape for updates from binance
-	void handleUserDataUpdate(const ix::WebSocketMessagePtr& msg, SPSCQueue<OrderIntent, CAPACITY>& updateQueue) { 
+	void handleUserDataUpdate(const ix::WebSocketMessagePtr& msg, SPSCQueue<OrderUpdate, CAPACITY>& updateQueue, std::ofstream& outputFile) { 
 		// add to update stream queue (consumed by OMS thread)
-		std::cout << msg->str.data();
+		outputFile << msg->str << '\n';
 	}
 }

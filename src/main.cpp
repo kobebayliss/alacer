@@ -59,7 +59,7 @@ static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQue
 	fclose(dataFile);
 }
 
-static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<OrderRequest, CAPACITY>& sendQueue, SPSCQueue<OrderIntent, CAPACITY>& updateQueue) {
+static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<OrderRequest, CAPACITY>& sendQueue, SPSCQueue<OrderUpdate, CAPACITY>& updateQueue) {
 	WebSocketClient depthStream("wss://stream.testnet.binance.vision/ws/btcusdt@depth@100ms", "data/marketdata.json", 
 		[&eventQueue](const ix::WebSocketMessagePtr& msg) {
 			EventHandler::handleDepthUpdate(msg, eventQueue);
@@ -67,10 +67,11 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, 
 	);
 	bool subscribed = false;
 	WebSocketClient* userDataStreamPtr = nullptr;
+	std::ofstream outputFile("data/updates.txt");
 	WebSocketClient userDataStream("wss://ws-api.testnet.binance.vision:443/ws-api/v3", "data/userdata.json",
-		[&updateQueue, &subscribed, &userDataStreamPtr](const ix::WebSocketMessagePtr& msg) {
+		[&updateQueue, &subscribed, &userDataStreamPtr, &outputFile](const ix::WebSocketMessagePtr& msg) {
 			if (subscribed) {
-				EventHandler::handleUserDataUpdate(msg, updateQueue);
+				EventHandler::handleUserDataUpdate(msg, updateQueue, outputFile);
 			} else {
 				if (msg->type == ix::WebSocketMessageType::Message) {
 					rapidjson::Document doc;
@@ -150,7 +151,7 @@ int main() {
 	SPSCQueue<RawMessage, CAPACITY> eventQueue{};
 	SPSCQueue<OrderIntent, CAPACITY> intentQueue{};
 	SPSCQueue<OrderRequest, CAPACITY> sendQueue{};
-	SPSCQueue<OrderIntent, CAPACITY> updateQueue{};
+	SPSCQueue<OrderUpdate, CAPACITY> updateQueue{};
 
 	if (BACKTESTING_MODE) {
 		runBacktest(ob, eventQueue, intentQueue);

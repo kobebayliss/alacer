@@ -6,7 +6,7 @@
 #include "../feed/BinanceAuth.hpp"
 
 // replace OrderIntent with shape for updates from binance
-void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<OrderRequest, CAPACITY>& sendQueue, SPSCQueue<OrderIntent, CAPACITY>& updateQueue, std::atomic<bool>& running) {
+void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<OrderRequest, CAPACITY>& sendQueue, SPSCQueue<OrderUpdate, CAPACITY>& updateQueue, std::atomic<bool>& running) {
 	while (running) {
 		// check fills/rejections from binance
 		// checks for acknowledgements outgoing orders were success
