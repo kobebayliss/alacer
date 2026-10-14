@@ -8,12 +8,11 @@
 
 namespace {
 	struct Position {
-		double volume = 0;
-		double avgEntryPrice = 0;
-		double pnl = 0;
+		double quantityHeld = 0;
+		double cashFlow = 0;
 	};
 	Position position;
-	std::unordered_map<const char*, Order> orders;
+	std::unordered_map<std::string, Order> orders;
 }
 
 static void applyUpdate(const OrderUpdate& update) {
@@ -28,9 +27,11 @@ static void applyUpdate(const OrderUpdate& update) {
 		order.filledVolume = update.totalFilledVolume;
 		// do position updates
 		if (order.side == Side::BUY) {
-			position.volume += delta;
+			position.quantityHeld += delta;
+			position.cashFlow -= (delta * update.filledPrice);
 		} else {
-			position.volume -= delta;
+			position.quantityHeld -= delta;
+			position.cashFlow += (delta * update.filledPrice);
 		}
 	}
 }
@@ -52,6 +53,8 @@ void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<Order
 		// construct actual uuid first
 		OrderRequest request{};
 		std::string id = generateRequestId();
+		uint64_t timestamp = getTimestampMillis();
+		orders.try_emplace(id, intent->side, OrderState::PENDING_NEW, intent->price, intent->volume, 0, timestamp, timestamp);
 		memcpy(request.clientOrderId, id.c_str(), id.size() + 1);
 		request.intent = *intent;
 		if (!sendQueue.try_push(request)) {
