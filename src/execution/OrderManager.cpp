@@ -9,7 +9,8 @@
 namespace {
 	struct Position {
 		double quantityHeld = 0;
-		double cashFlow = 0;
+		double avgEntryPrice = 0;
+		double realizedPnl = 0;
 	};
 	Position position;
 	std::unordered_map<std::string, Order> orders;
@@ -21,19 +22,31 @@ static void applyUpdate(const OrderUpdate& update) {
 	Order& order = it->second;
 	OrderState& currentState = order.state;
 	if (currentState == OrderState::FILLED || currentState == OrderState::CANCELED || currentState == OrderState::REJECTED || currentState == OrderState::EXPIRED) return;
-	order.state = update.newState;
+	if (update.newState > order.state) order.state = update.newState;  // can do this since enum is ordered intentionally forward
 	double delta = update.totalFilledVolume - order.filledVolume;
 	if (delta > 0) {
 		order.filledVolume = update.totalFilledVolume;
 		// do position updates
 		if (order.side == Side::BUY) {
-			position.quantityHeld += delta;
-			position.cashFlow -= (delta * update.filledPrice);
+			const double newQty = position.quantityHeld + delta;
+			position.avgEntryPrice = (position.quantityHeld * position.avgEntryPrice + delta * update.filledPrice) / newQty;
+			position.quantityHeld = newQty;
 		} else {
-			position.quantityHeld -= delta;
-			position.cashFlow += (delta * update.filledPrice);
+			double closing;
+			if (delta > position.quantityHeld) {
+				closing = position.quantityHeld;
+			} else {
+				closing = delta;
+			}
+			position.realizedPnl += closing * (update.filledPrice - position.avgEntryPrice);
+			position.quantityHeld -= closing;
+			if (position.quantityHeld < 1e-9) {
+				position.quantityHeld = 0;
+				position.avgEntryPrice = 0;
+			}
 		}
 	}
+	if (order.state >= OrderState::FILLED) orders.erase(it);
 }
 
 void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<OrderRequest, CAPACITY>& sendQueue, SPSCQueue<OrderUpdate, CAPACITY>& updateQueue, std::atomic<bool>& running) {
