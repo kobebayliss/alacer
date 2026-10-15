@@ -45,9 +45,10 @@ static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQue
 	uint64_t lastUpdateId = build_initial_orderbook(ob, bookData);
 
 	std::atomic<bool> running = true;
+	std::atomic<PositionView> positionView{PositionView{}};
 	auto producer = std::async(std::launch::async, backtestJsonFile, std::ref(dataFile), std::ref(eventQueue));
 	auto consumer = std::async(std::launch::async, bookUpdater, std::ref(eventQueue), std::ref(ob), std::ref(running), lastUpdateId, static_cast<std::ofstream*>(nullptr));
-	std::thread strategy(strategyLoop, std::ref(ob), std::ref(intentQueue), std::ref(running));
+	std::thread strategy(strategyLoop, std::ref(ob), std::ref(intentQueue), std::ref(positionView), std::ref(running));
 
 	std::cin.get();
 	signalShutdown(ob, running);
@@ -110,10 +111,11 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, 
 	depthStream.writeSnapshot(snapshotJson);
 
 	std::atomic<bool> running = true;
+	std::atomic<PositionView> positionView{PositionView{}};
 	auto consumer = std::async(std::launch::async, bookUpdater, std::ref(eventQueue), std::ref(ob), std::ref(running), lastUpdateId, &depthStream.outputFile);
 	// std::thread display(OrderBookDisplay::printLoop, std::ref(ob), std::ref(running));
-	std::thread strategy(strategyLoop, std::ref(ob), std::ref(intentQueue), std::ref(running));
-	std::thread manager(orderManager, std::ref(intentQueue), std::ref(sendQueue), std::ref(updateQueue), std::ref(running));
+	std::thread strategy(strategyLoop, std::ref(ob), std::ref(intentQueue), std::ref(positionView), std::ref(running));
+	std::thread manager(orderManager, std::ref(intentQueue), std::ref(sendQueue), std::ref(updateQueue), std::ref(positionView), std::ref(running));
 	std::thread sender(orderSender, std::ref(sendQueue), std::ref(running));
 
 	std::cin.get();

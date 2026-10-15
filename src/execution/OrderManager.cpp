@@ -1,3 +1,4 @@
+#include <atomic>
 #include <cpr/cpr.h>
 #include <cstring>
 #include <iostream>
@@ -58,7 +59,7 @@ static void applyUpdate(const OrderUpdate& update) {
 		  << " realized=" << position.realizedPnl << '\n';
 }
 
-void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<OrderRequest, CAPACITY>& sendQueue, SPSCQueue<OrderUpdate, CAPACITY>& updateQueue, std::atomic<bool>& running) {
+void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<OrderRequest, CAPACITY>& sendQueue, SPSCQueue<OrderUpdate, CAPACITY>& updateQueue, std::atomic<PositionView>& positionView, std::atomic<bool>& running) {
 	while (running) {
 		while (auto update = updateQueue.try_pop()) {
 			applyUpdate(*update);
@@ -83,6 +84,8 @@ void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<Order
 		} else {
 			position.workingSellQty += intent.volume;
 		}
+		PositionView snapshot{position.quantityHeld, position.workingBuyQty, position.workingSellQty};
+		positionView.store(snapshot, std::memory_order_release);
 		memcpy(request.clientOrderId, id.c_str(), id.size() + 1);
 		request.intent = intent;
 		if (!sendQueue.try_push(request)) {

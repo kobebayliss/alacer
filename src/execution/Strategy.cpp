@@ -3,7 +3,7 @@
 #include <chrono>
 #include <iostream>
 
-void strategyLoop(OrderBook &ob, SPSCQueue<OrderIntent, CAPACITY>& intentQueue, std::atomic<bool> &running) {
+void strategyLoop(OrderBook &ob, SPSCQueue<OrderIntent, CAPACITY>& intentQueue, std::atomic<PositionView>& positionView, std::atomic<bool> &running) {
 	const bool TEST_MODE = true;  // true: trade on a timer, ignore imbalance
 	const auto TEST_INTERVAL = std::chrono::seconds(5);
 
@@ -20,6 +20,9 @@ void strategyLoop(OrderBook &ob, SPSCQueue<OrderIntent, CAPACITY>& intentQueue, 
 		double bid_volume = top_k_bids.second;
 		double ask_volume = top_k_asks.second;
 		double imbalance = (bid_volume - ask_volume) / (bid_volume + ask_volume);
+
+		PositionView snapshot = positionView.load(std::memory_order_acquire);
+		// decide if we can send another order out or not
 
 		auto now = std::chrono::steady_clock::now();
 		bool testBuy  = TEST_MODE && !holding && now - lastTrade >= TEST_INTERVAL;
