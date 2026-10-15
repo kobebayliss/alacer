@@ -9,11 +9,36 @@
 namespace {
 	struct Position {
 		double quantityHeld = 0;
+		double workingBuyQty = 0;
+		double workingSellQty = 0;
 		double avgEntryPrice = 0;
 		double realizedPnl = 0;
 	};
 	Position position;
 	std::unordered_map<std::string, Order> orders;
+}
+
+static void applyFillToPos(Side side, double delta, double price) {
+	if (side == Side::BUY) {
+		position.workingBuyQty -= delta;
+		const double newQty = position.quantityHeld + delta;
+		position.avgEntryPrice = (position.quantityHeld * position.avgEntryPrice + delta * price) / newQty;
+		position.quantityHeld = newQty;
+	} else {
+		position.workingSellQty -= delta;
+		double closing;
+		if (delta > position.quantityHeld) {
+			closing = position.quantityHeld;
+		} else {
+			closing = delta;
+		}
+		position.realizedPnl += closing * (price - position.avgEntryPrice);
+		position.quantityHeld -= closing;
+		if (position.quantityHeld < EPSILON) {
+			position.quantityHeld = 0;
+			position.avgEntryPrice = 0;
+		}
+	}
 }
 
 static void applyUpdate(const OrderUpdate& update) {
@@ -26,27 +51,11 @@ static void applyUpdate(const OrderUpdate& update) {
 	double delta = update.totalFilledVolume - order.filledVolume;
 	if (delta > 0) {
 		order.filledVolume = update.totalFilledVolume;
-		// do position updates
-		if (order.side == Side::BUY) {
-			const double newQty = position.quantityHeld + delta;
-			position.avgEntryPrice = (position.quantityHeld * position.avgEntryPrice + delta * update.filledPrice) / newQty;
-			position.quantityHeld = newQty;
-		} else {
-			double closing;
-			if (delta > position.quantityHeld) {
-				closing = position.quantityHeld;
-			} else {
-				closing = delta;
-			}
-			position.realizedPnl += closing * (update.filledPrice - position.avgEntryPrice);
-			position.quantityHeld -= closing;
-			if (position.quantityHeld < 1e-9) {
-				position.quantityHeld = 0;
-				position.avgEntryPrice = 0;
-			}
-		}
+		applyFillToPos(order.side, delta, update.filledPrice);
 	}
 	if (order.state >= OrderState::FILLED) orders.erase(it);
+	std::cout << "POS qty=" << position.quantityHeld << " avg=" << position.avgEntryPrice
+		  << " realized=" << position.realizedPnl << '\n';
 }
 
 void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<OrderRequest, CAPACITY>& sendQueue, SPSCQueue<OrderUpdate, CAPACITY>& updateQueue, std::atomic<bool>& running) {
@@ -57,8 +66,8 @@ void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<Order
 		// check fills/rejections from binance
 		// checks for acknowledgements outgoing orders were success
 		// place new orders from intent queue
-		auto intent = intentQueue.try_pop();
-		if (!intent) {
+		auto pIntent = intentQueue.try_pop();
+		if (!pIntent) {
 			continue; // empty
 		}
 		// decide if we still want to execute order
@@ -67,9 +76,15 @@ void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<Order
 		OrderRequest request{};
 		std::string id = generateRequestId();
 		uint64_t timestamp = getTimestampMillis();
-		orders.try_emplace(id, intent->side, OrderState::PENDING_NEW, intent->price, intent->volume, 0, timestamp, timestamp);
+		OrderIntent intent = *pIntent;
+		orders.try_emplace(id, intent.side, OrderState::PENDING_NEW, intent.price, intent.volume, 0, timestamp, timestamp);
+		if (intent.side == Side::BUY) {
+			position.workingBuyQty += intent.volume;
+		} else {
+			position.workingSellQty += intent.volume;
+		}
 		memcpy(request.clientOrderId, id.c_str(), id.size() + 1);
-		request.intent = *intent;
+		request.intent = intent;
 		if (!sendQueue.try_push(request)) {
 			std::cout << "send queue is full.\n";
 		}
