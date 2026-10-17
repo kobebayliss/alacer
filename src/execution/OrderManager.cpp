@@ -55,14 +55,20 @@ static void applyUpdate(const OrderUpdate& update) {
 		applyFillToPos(order.side, delta, update.filledPrice);
 	}
 	if (order.state >= OrderState::FILLED) orders.erase(it);
-	std::cout << "POS qty=" << position.quantityHeld << " avg=" << position.avgEntryPrice
-		  << " realized=" << position.realizedPnl << '\n';
+	std::cout << "POSITION =" << position.quantityHeld << "\navg entry =$" << position.avgEntryPrice
+		  << "\nrealized =$" << position.realizedPnl << "\nWORKING BUY/SELL QTY =" << position.workingBuyQty << "/" << position.workingSellQty << '\n';
 }
 
 void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<OrderRequest, CAPACITY>& sendQueue, SPSCQueue<OrderUpdate, CAPACITY>& updateQueue, std::atomic<PositionView>& positionView, std::atomic<bool>& running) {
+	bool updated;
 	while (running) {
+		updated = false;
 		while (auto update = updateQueue.try_pop()) {
 			applyUpdate(*update);
+			updated = true;
+		}
+		if (updated) {
+			positionView.store(PositionView{position.quantityHeld, position.workingBuyQty, position.workingSellQty}, std::memory_order_release);
 		}
 		// check fills/rejections from binance
 		// checks for acknowledgements outgoing orders were success
@@ -84,8 +90,7 @@ void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<Order
 		} else {
 			position.workingSellQty += intent.volume;
 		}
-		PositionView snapshot{position.quantityHeld, position.workingBuyQty, position.workingSellQty};
-		positionView.store(snapshot, std::memory_order_release);
+		positionView.store(PositionView{position.quantityHeld, position.workingBuyQty, position.workingSellQty}, std::memory_order_release);
 		memcpy(request.clientOrderId, id.c_str(), id.size() + 1);
 		request.intent = intent;
 		if (!sendQueue.try_push(request)) {

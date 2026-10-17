@@ -6,8 +6,6 @@
 enum class IntentType : uint8_t { PLACE, CANCEL };
 enum class OrderState : uint8_t { PENDING_NEW, NEW, PARTIALLY_FILLED, FILLED, REJECTED, CANCELED, EXPIRED };
 constexpr uint32_t CLIENT_ORDER_ID_LENGTH = 37; // 36 chars for UUID + 1 for null terminator
-constexpr double MAX_ORDER_QTY = 0.02;
-constexpr double MAX_POSITION = 0.1;
 constexpr double EPSILON = 1e-9;
 
 

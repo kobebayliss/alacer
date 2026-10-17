@@ -33,7 +33,6 @@ namespace EventHandler {
 		}
 	}
 	void handleUserDataUpdate(const ix::WebSocketMessagePtr& msg, SPSCQueue<OrderUpdate, CAPACITY>& updateQueue, std::ofstream& outputFile) { 
-		std::cout << "MESSAGED RECIEVED\n";
 		if (msg->type != ix::WebSocketMessageType::Message) return;
 		rapidjson::Document doc;
 		doc.Parse(msg->str.c_str());
@@ -44,7 +43,6 @@ namespace EventHandler {
 		if (!doc.HasMember("event") || !doc["event"].IsObject()) return;  // filters subscribe ack etc.
 		const rapidjson::Value& eventDetails = doc["event"];
 		if (!eventDetails.HasMember("e") || std::string_view(eventDetails["e"].GetString()) != "executionReport") return;
-		std::cout << "MESSAGED RECIEVED AFTER\n";
 
 		OrderUpdate u{};
 		const rapidjson::Value& clientOrderId = eventDetails["c"];

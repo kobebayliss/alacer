@@ -149,6 +149,11 @@ static void cancelAllOpenOrders() {
 	}
 }
 
+static void getExchangeInfo() {
+	cpr::Response r = cpr::Get(cpr::Url{"https://testnet.binance.vision/api/v3/exchangeInfo?symbol=BTCUSDT"});
+	std::cout << r.status_code << '\n' << r.text << '\n';
+}
+
 int main() {
 	cancelAllOpenOrders();
 	OrderBook ob{"BTCUSDT"};
