@@ -154,8 +154,46 @@ static void getExchangeInfo() {
 	std::cout << r.status_code << '\n' << r.text << '\n';
 }
 
+static void printAccountSummary() {
+	std::string queryString = "timestamp=" + std::to_string(getTimestampMillis());
+	std::string signature = generateUserDataSignature(queryString);
+	cpr::Response r = cpr::Get(cpr::Url{
+	    "https://testnet.binance.vision/api/v3/account?" + queryString + "&signature=" + signature}, cpr::Header{{"X-MBX-APIKEY", getBinanceKeys()[0]}}
+	);
+	if (r.status_code != 200) {
+		std::cerr << "Failed to fetch account summary: " << r.status_code << " " << r.text << '\n';
+		return;
+	}
+
+	rapidjson::Document doc;
+	doc.Parse(r.text.c_str());
+	if (doc.HasParseError()) {
+		std::cerr << "Failed to parse account summary\n";
+		return;
+	}
+
+	std::cout << "=== Account Summary ===\n"
+		<< "Can trade: "
+		<< (doc["canTrade"].GetBool() ? "Yes" : "No") << '\n'
+		<< "Can withdraw: "
+		<< (doc["canWithdraw"].GetBool() ? "Yes" : "No") << '\n'
+		<< "Can deposit: "
+		<< (doc["canDeposit"].GetBool() ? "Yes" : "No") << '\n';
+
+	for (const auto& balance : doc["balances"].GetArray()) {
+		std::string asset = balance["asset"].GetString();
+		if (asset != "BTC" && asset != "USDT")
+			continue;
+
+		double free = std::stod(balance["free"].GetString());
+		double locked = std::stod(balance["locked"].GetString());
+		std::cout << asset << " | Free: " << free << " | Locked: " << locked << '\n';
+	}
+}
+
 int main() {
 	cancelAllOpenOrders();
+	printAccountSummary();
 	OrderBook ob{"BTCUSDT"};
 	SPSCQueue<RawMessage, CAPACITY> eventQueue{};
 	SPSCQueue<OrderIntent, CAPACITY> intentQueue{};
