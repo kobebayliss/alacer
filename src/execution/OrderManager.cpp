@@ -61,6 +61,8 @@ static void applyUpdate(const OrderUpdate& update) {
 
 void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<OrderRequest, CAPACITY>& sendQueue, SPSCQueue<OrderUpdate, CAPACITY>& updateQueue, std::atomic<PositionView>& positionView, std::atomic<bool>& running) {
 	bool updated;
+	PositionView initialPosition = positionView.load(std::memory_order_acquire);
+	position.quantityHeld = initialPosition.quantityHeld;
 	while (running) {
 		updated = false;
 		while (auto update = updateQueue.try_pop()) {

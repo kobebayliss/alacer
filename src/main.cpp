@@ -9,6 +9,7 @@
 #include <atomic>
 #include <future>
 #include <thread>
+#include <utility>
 #include "backtesting/BacktestDataFeed.hpp"
 #include "book/OrderBookBuilder.hpp"
 #include "book/OrderBook.hpp"
@@ -32,6 +33,92 @@ static void signalShutdown(OrderBook& ob, std::atomic<bool>& running) {
 	running = false;
 	ob.updated.store(true, std::memory_order_release);
 	ob.updated.notify_all();
+}
+
+static void cancelAllOpenOrders() {
+	std::string queryString =
+		"symbol=BTCUSDT"
+		"&timestamp=" + std::to_string(getTimestampMillis());
+	std::string signature = generateUserDataSignature(queryString);
+
+	cpr::Response r = cpr::Delete(
+		cpr::Url{"https://testnet.binance.vision/api/v3/openOrders?" + queryString + "&signature=" + signature},
+		cpr::Header{{"X-MBX-APIKEY", getBinanceKeys()[0]}}
+	);
+
+	if (r.status_code == 200) {
+		std::cout << "Cancelled all open orders\n";
+	} else {
+		std::cerr << "Cancel failed " << r.status_code << " " << r.text << std::endl;
+	}
+}
+
+static void getExchangeInfo() {
+	cpr::Response r = cpr::Get(cpr::Url{"https://testnet.binance.vision/api/v3/exchangeInfo?symbol=BTCUSDT"});
+	std::cout << r.status_code << '\n' << r.text << '\n';
+}
+
+static bool fetchAccount(rapidjson::Document& doc) {
+	std::string queryString = "omitZeroBalances=true&timestamp=" + std::to_string(getTimestampMillis());
+	std::string signature = generateUserDataSignature(queryString);
+	cpr::Response r = cpr::Get(cpr::Url{
+	    "https://testnet.binance.vision/api/v3/account?" + queryString + "&signature=" + signature}, cpr::Header{{"X-MBX-APIKEY", getBinanceKeys()[0]}}
+	);
+	if (r.status_code != 200) {
+		std::cerr << "Failed to fetch account summary: " << r.status_code << " " << r.text << '\n';
+		return false;
+	}
+	doc.Parse(r.text.c_str());
+	if (doc.HasParseError()) {
+		std::cerr << "Failed to parse account summary\n";
+		return false;
+	}
+	return true;
+}
+
+static std::pair<std::pair<double, double>, std::pair<double, double>> getBalances() {  // returns balances of BTC and USDT (free, locked)
+	rapidjson::Document doc;
+	if (!fetchAccount(doc)) return {};
+
+	int found = 0;
+	std::pair<std::pair<double, double>, std::pair<double, double>> balances;
+	for (const auto& balance : doc["balances"].GetArray()) {
+		std::string asset = balance["asset"].GetString();
+		if (asset != "BTC" && asset != "USDT")
+			continue;
+
+		double free = std::stod(balance["free"].GetString());
+		double locked = std::stod(balance["locked"].GetString());
+		auto& slot = (asset == "BTC") ? balances.first : balances.second;
+		slot = std::make_pair(free, locked);
+		if (++found == 2) break;
+	}
+	return balances;
+}
+
+static void printAccountSummary() {
+	rapidjson::Document doc;
+	if (!fetchAccount(doc)) return;
+
+	std::cout << "=== Account Summary ===\n"
+		<< "Can trade: "
+		<< (doc["canTrade"].GetBool() ? "Yes" : "No") << '\n'
+		<< "Can withdraw: "
+		<< (doc["canWithdraw"].GetBool() ? "Yes" : "No") << '\n'
+		<< "Can deposit: "
+		<< (doc["canDeposit"].GetBool() ? "Yes" : "No") << '\n';
+
+	int found = 0;
+	for (const auto& balance : doc["balances"].GetArray()) {
+		std::string asset = balance["asset"].GetString();
+		if (asset != "BTC" && asset != "USDT")
+			continue;
+
+		double free = std::stod(balance["free"].GetString());
+		double locked = std::stod(balance["locked"].GetString());
+		std::cout << asset << " | Free: " << free << " | Locked: " << locked << '\n';
+		if (++found == 2) break;
+	}
 }
 
 static void runBacktest(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, SPSCQueue<OrderIntent, CAPACITY>& intentQueue) {
@@ -111,7 +198,9 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, 
 	depthStream.writeSnapshot(snapshotJson);
 
 	std::atomic<bool> running = true;
+	auto balances = getBalances();
 	std::atomic<PositionView> positionView{PositionView{}};
+	positionView.store(PositionView{balances.first.first, 0, 0}, std::memory_order_release);
 	auto consumer = std::async(std::launch::async, bookUpdater, std::ref(eventQueue), std::ref(ob), std::ref(running), lastUpdateId, &depthStream.outputFile);
 	// std::thread display(OrderBookDisplay::printLoop, std::ref(ob), std::ref(running));
 	std::thread strategy(strategyLoop, std::ref(ob), std::ref(intentQueue), std::ref(positionView), std::ref(running));
@@ -131,80 +220,19 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, 
 	std::cout << "consumer reads: "  << consumer.get() << '\n';
 }
 
-static void cancelAllOpenOrders() {
-	std::string queryString =
-		"symbol=BTCUSDT"
-		"&timestamp=" + std::to_string(getTimestampMillis());
-	std::string signature = generateUserDataSignature(queryString);
-
-	cpr::Response r = cpr::Delete(
-		cpr::Url{"https://testnet.binance.vision/api/v3/openOrders?" + queryString + "&signature=" + signature},
-		cpr::Header{{"X-MBX-APIKEY", getBinanceKeys()[0]}}
-	);
-
-	if (r.status_code == 200) {
-		std::cout << "Cancelled all open orders\n";
-	} else {
-		std::cerr << "Cancel failed " << r.status_code << " " << r.text << std::endl;
-	}
-}
-
-static void getExchangeInfo() {
-	cpr::Response r = cpr::Get(cpr::Url{"https://testnet.binance.vision/api/v3/exchangeInfo?symbol=BTCUSDT"});
-	std::cout << r.status_code << '\n' << r.text << '\n';
-}
-
-static void printAccountSummary() {
-	std::string queryString = "timestamp=" + std::to_string(getTimestampMillis());
-	std::string signature = generateUserDataSignature(queryString);
-	cpr::Response r = cpr::Get(cpr::Url{
-	    "https://testnet.binance.vision/api/v3/account?" + queryString + "&signature=" + signature}, cpr::Header{{"X-MBX-APIKEY", getBinanceKeys()[0]}}
-	);
-	if (r.status_code != 200) {
-		std::cerr << "Failed to fetch account summary: " << r.status_code << " " << r.text << '\n';
-		return;
-	}
-
-	rapidjson::Document doc;
-	doc.Parse(r.text.c_str());
-	if (doc.HasParseError()) {
-		std::cerr << "Failed to parse account summary\n";
-		return;
-	}
-
-	std::cout << "=== Account Summary ===\n"
-		<< "Can trade: "
-		<< (doc["canTrade"].GetBool() ? "Yes" : "No") << '\n'
-		<< "Can withdraw: "
-		<< (doc["canWithdraw"].GetBool() ? "Yes" : "No") << '\n'
-		<< "Can deposit: "
-		<< (doc["canDeposit"].GetBool() ? "Yes" : "No") << '\n';
-
-	for (const auto& balance : doc["balances"].GetArray()) {
-		std::string asset = balance["asset"].GetString();
-		if (asset != "BTC" && asset != "USDT")
-			continue;
-
-		double free = std::stod(balance["free"].GetString());
-		double locked = std::stod(balance["locked"].GetString());
-		std::cout << asset << " | Free: " << free << " | Locked: " << locked << '\n';
-	}
-}
-
 int main() {
-	cancelAllOpenOrders();
 	printAccountSummary();
-	OrderBook ob{"BTCUSDT"};
-	SPSCQueue<RawMessage, CAPACITY> eventQueue{};
-	SPSCQueue<OrderIntent, CAPACITY> intentQueue{};
-	SPSCQueue<OrderRequest, CAPACITY> sendQueue{};
-	SPSCQueue<OrderUpdate, CAPACITY> updateQueue{};
-
-	if (BACKTESTING_MODE) {
-		runBacktest(ob, eventQueue, intentQueue);
-	} else {
-		runLive(ob, eventQueue, intentQueue, sendQueue, updateQueue);
-	}
-
+	// OrderBook ob{"BTCUSDT"};
+	// SPSCQueue<RawMessage, CAPACITY> eventQueue{};
+	// SPSCQueue<OrderIntent, CAPACITY> intentQueue{};
+	// SPSCQueue<OrderRequest, CAPACITY> sendQueue{};
+	// SPSCQueue<OrderUpdate, CAPACITY> updateQueue{};
+	//
+	// if (BACKTESTING_MODE) {
+	// 	runBacktest(ob, eventQueue, intentQueue);
+	// } else {
+	// 	runLive(ob, eventQueue, intentQueue, sendQueue, updateQueue);
+	// }
+	cancelAllOpenOrders();
 	return 0;
 }

@@ -5,7 +5,7 @@
 #include <iostream>
 #include <thread>
 
-constexpr double MAX_POSITION = 0.1;
+constexpr double MAX_POSITION = 0.4;
 constexpr double IMB_THRESHOLD = 0.6;
 constexpr double MIN_DEPTH = 0.5;
 constexpr double LIQ_FRACTION = 0.5;
@@ -66,6 +66,6 @@ void strategyLoop(OrderBook &ob, SPSCQueue<OrderIntent, CAPACITY>& intentQueue, 
 			} 
 		}
 		std::cout << "imb=" << imbalance << "\ndepth=" << depth << "\ntarget position=" << targetPosition << '\n';
-		std::this_thread::sleep_for(std::chrono::seconds(1));
+		std::this_thread::sleep_for(std::chrono::milliseconds(250)); // for debugging
 	}
 }
