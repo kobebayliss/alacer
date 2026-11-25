@@ -99,14 +99,15 @@ static void applyUpdate(const OrderUpdate& update) {
 		// need to adjust exposure due to failing order
 		adjustWorkingQty(order.side, order.volume - order.filledVolume);
 	}
-	if (order.state >= OrderState::FILLED) orders.erase(it);
 	logPosition(update, order, fillQty);
+	if (order.state >= OrderState::FILLED) orders.erase(it);
 }
 
-void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<OrderRequest, CAPACITY>& sendQueue, SPSCQueue<OrderUpdate, CAPACITY>& updateQueue, std::atomic<PositionView>& positionView, std::atomic<bool>& running) {
+void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<OrderRequest, CAPACITY>& sendQueue, SPSCQueue<OrderUpdate, CAPACITY>& updateQueue, std::atomic<PositionView>& positionView, double startingMidPrice, std::atomic<bool>& running) {
 	bool updated;
 	PositionView initialPosition = positionView.load(std::memory_order_acquire);
 	position.quantityHeld = initialPosition.quantityHeld;
+	position.avgEntryPrice = startingMidPrice;
 	positionLog.open("data/position.txt");
 	if (!positionLog.is_open()) std::cerr << "Failed to open data/position.txt\n";
 	while (running) {

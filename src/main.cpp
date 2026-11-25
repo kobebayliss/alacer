@@ -200,10 +200,11 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, 
 	auto balances = getBalances();
 	std::atomic<PositionView> positionView{PositionView{}};
 	positionView.store(PositionView{balances.first.first, 0, 0}, std::memory_order_release);
+	double midPrice = (ob.get_top_level(Side::SELL).first + ob.get_top_level(Side::BUY).first) / 2;
 	auto consumer = std::async(std::launch::async, bookUpdater, std::ref(eventQueue), std::ref(ob), std::ref(running), lastUpdateId, &depthStream.outputFile);
 	// std::thread display(OrderBookDisplay::printLoop, std::ref(ob), std::ref(running));
 	std::thread strategy(strategyLoop, std::ref(ob), std::ref(intentQueue), std::ref(positionView), std::ref(running));
-	std::thread manager(orderManager, std::ref(intentQueue), std::ref(sendQueue), std::ref(updateQueue), std::ref(positionView), std::ref(running));
+	std::thread manager(orderManager, std::ref(intentQueue), std::ref(sendQueue), std::ref(updateQueue), std::ref(positionView), midPrice, std::ref(running));
 	std::thread sender(orderSender, std::ref(sendQueue), std::ref(running));
 
 	std::cin.get();
