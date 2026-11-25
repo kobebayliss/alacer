@@ -1,6 +1,5 @@
 #include "Strategy.hpp"
 #include <algorithm>
-#include <chrono>
 #include <atomic>
 #include <iostream>
 #include <thread>

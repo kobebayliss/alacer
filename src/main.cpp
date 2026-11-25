@@ -1,4 +1,3 @@
-#include <chrono>
 #include <cpr/parameters.h>
 #include <ixwebsocket/IXWebSocket.h>
 #include <cpr/cpr.h>
@@ -59,7 +58,7 @@ static void getExchangeInfo() {
 }
 
 static bool fetchAccount(rapidjson::Document& doc) {
-	std::string queryString = "omitZeroBalances=true&timestamp=" + std::to_string(getTimestampMillis());
+	std::string queryString = "timestamp=" + std::to_string(getTimestampMillis());
 	std::string signature = generateUserDataSignature(queryString);
 	cpr::Response r = cpr::Get(cpr::Url{
 	    "https://testnet.binance.vision/api/v3/account?" + queryString + "&signature=" + signature}, cpr::Header{{"X-MBX-APIKEY", getBinanceKeys()[0]}}
@@ -222,17 +221,17 @@ static void runLive(OrderBook& ob, SPSCQueue<RawMessage, CAPACITY>& eventQueue, 
 
 int main() {
 	printAccountSummary();
-	// OrderBook ob{"BTCUSDT"};
-	// SPSCQueue<RawMessage, CAPACITY> eventQueue{};
-	// SPSCQueue<OrderIntent, CAPACITY> intentQueue{};
-	// SPSCQueue<OrderRequest, CAPACITY> sendQueue{};
-	// SPSCQueue<OrderUpdate, CAPACITY> updateQueue{};
-	//
-	// if (BACKTESTING_MODE) {
-	// 	runBacktest(ob, eventQueue, intentQueue);
-	// } else {
-	// 	runLive(ob, eventQueue, intentQueue, sendQueue, updateQueue);
-	// }
+	OrderBook ob{"BTCUSDT"};
+	SPSCQueue<RawMessage, CAPACITY> eventQueue{};
+	SPSCQueue<OrderIntent, CAPACITY> intentQueue{};
+	SPSCQueue<OrderRequest, CAPACITY> sendQueue{};
+	SPSCQueue<OrderUpdate, CAPACITY> updateQueue{};
+
+	if (BACKTESTING_MODE) {
+		runBacktest(ob, eventQueue, intentQueue);
+	} else {
+		runLive(ob, eventQueue, intentQueue, sendQueue, updateQueue);
+	}
 	cancelAllOpenOrders();
 	return 0;
 }
