@@ -103,6 +103,31 @@ static void applyUpdate(const OrderUpdate& update) {
 	if (order.state >= OrderState::FILLED) orders.erase(it);
 }
 
+void sendOrder(const OrderIntent& intent, std::atomic<PositionView>& positionView, SPSCQueue<OrderRequest, CAPACITY>& sendQueue) {
+	// decide if we still want to execute order
+	// hands off order details to network sender thread to not block order manager
+	// construct actual uuid first
+	OrderRequest request{};
+	std::string id = generateRequestId();
+	uint64_t timestamp = getTimestampMillis();
+	orders.try_emplace(id, intent.side, OrderState::PENDING_NEW, intent.price, intent.volume, 0, timestamp, timestamp);
+	if (intent.side == Side::BUY) {
+		position.workingBuyQty += intent.volume;
+	} else {
+		position.workingSellQty += intent.volume;
+	}
+	positionView.store(PositionView{position.quantityHeld, position.workingBuyQty, position.workingSellQty}, std::memory_order_release);
+	memcpy(request.clientOrderId, id.c_str(), id.size() + 1);
+	request.intent = intent;
+	if (!sendQueue.try_push(request)) {
+		std::cout << "send queue is full.\n";
+	}
+}
+
+void cancelOpenOrders(const Side& side) {
+	// to be done; need to adjust orders map so we dont traverse entire tree cancelling buy/sell orders
+}
+
 void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<OrderRequest, CAPACITY>& sendQueue, SPSCQueue<OrderUpdate, CAPACITY>& updateQueue, std::atomic<PositionView>& positionView, double startingMidPrice, std::atomic<bool>& running) {
 	bool updated;
 	PositionView initialPosition = positionView.load(std::memory_order_acquire);
@@ -126,24 +151,11 @@ void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<Order
 		if (!pIntent) {
 			continue; // empty
 		}
-		// decide if we still want to execute order
-		// hands off order details to network sender thread to not block order manager
-		// construct actual uuid first
-		OrderRequest request{};
-		std::string id = generateRequestId();
-		uint64_t timestamp = getTimestampMillis();
 		OrderIntent intent = *pIntent;
-		orders.try_emplace(id, intent.side, OrderState::PENDING_NEW, intent.price, intent.volume, 0, timestamp, timestamp);
-		if (intent.side == Side::BUY) {
-			position.workingBuyQty += intent.volume;
+		if (intent.type == IntentType::PLACE) {
+			sendOrder(intent, positionView, sendQueue);
 		} else {
-			position.workingSellQty += intent.volume;
-		}
-		positionView.store(PositionView{position.quantityHeld, position.workingBuyQty, position.workingSellQty}, std::memory_order_release);
-		memcpy(request.clientOrderId, id.c_str(), id.size() + 1);
-		request.intent = intent;
-		if (!sendQueue.try_push(request)) {
-			std::cout << "send queue is full.\n";
+			cancelOpenOrders(intent.side);
 		}
 	}
 }
