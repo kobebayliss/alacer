@@ -19,6 +19,7 @@ namespace {
 	};
 	Position position;
 	std::unordered_map<std::string, Order> orders;
+	std::array<std::vector<std::string>, 2> orderIdsBySide; // [buy order ids], [sell order ids]
 	std::ofstream positionLog;
 }
 
@@ -112,20 +113,38 @@ void sendOrder(const OrderIntent& intent, std::atomic<PositionView>& positionVie
 	uint64_t timestamp = getTimestampMillis();
 	orders.try_emplace(id, intent.side, OrderState::PENDING_NEW, intent.price, intent.volume, 0, timestamp, timestamp);
 	if (intent.side == Side::BUY) {
+		orderIdsBySide[0].emplace_back(id);
 		position.workingBuyQty += intent.volume;
 	} else {
+		orderIdsBySide[1].emplace_back(id);
 		position.workingSellQty += intent.volume;
 	}
 	positionView.store(PositionView{position.quantityHeld, position.workingBuyQty, position.workingSellQty}, std::memory_order_release);
-	memcpy(request.clientOrderId, id.c_str(), id.size() + 1);
 	request.intent = intent;
+	memcpy(request.clientOrderId, id.c_str(), id.size() + 1);
 	if (!sendQueue.try_push(request)) {
 		std::cout << "send queue is full.\n";
 	}
 }
 
-void cancelOpenOrders(const Side& side) {
-	// to be done; need to adjust orders map so we dont traverse entire tree cancelling buy/sell orders
+void cancelOpenOrders(OrderIntent intent, SPSCQueue<OrderRequest, CAPACITY>& sendQueue) {
+	if ((intent.side == Side::BUY && position.workingSellQty == 0) || (intent.side == Side::SELL && position.workingBuyQty == 0)) {
+		// cancel all open orders; need to adjust OrderRequest type to include a cancel all enum type
+		return;
+	}
+	std::vector<std::string>& ids = orderIdsBySide[static_cast<size_t>(intent.side)];
+	for (const std::string& id : ids) {
+		auto it = orders.find(id);
+		if (it == orders.end()) {
+			std::erase(ids, id);  // lazy cleanup of orderIdsBySide
+		}
+		OrderRequest cancelRequest{};
+		cancelRequest.intent = intent;
+		memcpy(cancelRequest.clientOrderId, id.c_str(), id.size() + 1);
+		if (!sendQueue.try_push(cancelRequest)) {
+			std::cout << "send queue is full.\n";
+		}
+	}
 }
 
 void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<OrderRequest, CAPACITY>& sendQueue, SPSCQueue<OrderUpdate, CAPACITY>& updateQueue, std::atomic<PositionView>& positionView, double startingMidPrice, std::atomic<bool>& running) {
@@ -155,7 +174,7 @@ void orderManager(SPSCQueue<OrderIntent, CAPACITY>& intentQueue, SPSCQueue<Order
 		if (intent.type == IntentType::PLACE) {
 			sendOrder(intent, positionView, sendQueue);
 		} else {
-			cancelOpenOrders(intent.side);
+			cancelOpenOrders(intent, sendQueue);
 		}
 	}
 }

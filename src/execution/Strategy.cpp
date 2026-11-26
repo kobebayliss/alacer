@@ -10,7 +10,8 @@ constexpr double MIN_DEPTH = 0.5;
 constexpr double LIQ_FRACTION = 0.5;
 constexpr double QTY_STEP = 0.00001;
 constexpr double MIN_NOTIONAL = 5.0;
-constexpr double MIN_TRADE = 0.01;
+constexpr double MIN_DIFF = 0.02;
+constexpr double MIN_ORDER_QTY = 0.001;
 
 enum class Regime : uint8_t { BULLISH, NEUTRAL, BEARISH };
 
@@ -59,23 +60,23 @@ void strategyLoop(OrderBook &ob, SPSCQueue<OrderIntent, CAPACITY>& intentQueue, 
 
 		const double exposure = snapshot.quantityHeld + snapshot.workingBuyQty;
 		const double diff = targetPosition - exposure;
-		if (diff > MIN_TRADE) {
+		if (diff > MIN_DIFF) {
 			const double price = top_k_asks.first[0].first;
 			// determines qty to buy whilst ensuring we dont walk the book by comparing top ask qty
 			double qty = std::min({diff, top_k_asks.first[0].second * LIQ_FRACTION});
 			qty = std::floor(qty / QTY_STEP + EPSILON) * QTY_STEP;
-			if (qty < QTY_STEP || qty * price < MIN_NOTIONAL) continue;
+			if (qty < MIN_ORDER_QTY || qty * price < MIN_NOTIONAL) continue;
 			OrderIntent orderDetails{price, qty, IntentType::PLACE, Side::BUY};
 			if (!intentQueue.try_push(orderDetails)) {
 				std::cout << "QUEUE FULL: DROPPING ORDER.\n";
 			} 
-		} else if (diff < -MIN_TRADE) {
+		} else if (diff < -MIN_DIFF) {
 			const double sellable = snapshot.quantityHeld - snapshot.workingSellQty;
 			const double price = top_k_bids.first[0].first;
 			// determines qty to sell whilst ensuring we dont walk the book by comparing top bid qty
 			double qty = std::min({-diff, sellable, top_k_bids.first[0].second * LIQ_FRACTION});
 			qty = std::floor(qty / QTY_STEP + EPSILON) * QTY_STEP;
-			if (qty < QTY_STEP || qty * price < MIN_NOTIONAL) continue;
+			if (qty < MIN_ORDER_QTY || qty * price < MIN_NOTIONAL) continue;
 			OrderIntent orderDetails{price, qty, IntentType::PLACE, Side::SELL};
 			if (!intentQueue.try_push(orderDetails)) {
 				std::cout << "QUEUE FULL: DROPPING ORDER.\n";
