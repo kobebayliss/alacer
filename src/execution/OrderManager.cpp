@@ -128,19 +128,27 @@ void sendOrder(const OrderIntent& intent, std::atomic<PositionView>& positionVie
 }
 
 void cancelOpenOrders(OrderIntent intent, SPSCQueue<OrderRequest, CAPACITY>& sendQueue) {
-	if ((intent.side == Side::BUY && position.workingSellQty == 0) || (intent.side == Side::SELL && position.workingBuyQty == 0)) {
-		// cancel all open orders; need to adjust OrderRequest type to include a cancel all enum type
+	if ((intent.side == Side::BUY && position.workingBuyQty < EPSILON) || (intent.side == Side::SELL && position.workingSellQty < EPSILON)) return;
+	if ((intent.side == Side::BUY && position.workingSellQty < EPSILON) || (intent.side == Side::SELL && position.workingBuyQty < EPSILON)) {
+		OrderIntent cancelAllIntent{0, 0, IntentType::CANCEL_ALL, Side::BUY}; // side here is a placeholder
+		OrderRequest cancelAllRequest{cancelAllIntent, {}};
+		if (!sendQueue.try_push(cancelAllRequest)) {
+			std::cout << "send queue is full.\n";
+		}
 		return;
 	}
 	std::vector<std::string>& ids = orderIdsBySide[static_cast<size_t>(intent.side)];
-	for (const std::string& id : ids) {
-		auto it = orders.find(id);
+	for (size_t i = ids.size(); i-- > 0;) {
+		auto it = orders.find(ids[i]);
 		if (it == orders.end()) {
-			std::erase(ids, id);  // lazy cleanup of orderIdsBySide
+			// lazy cleanup of orderIdsBySide
+			ids[i] = std::move(ids.back());
+			ids.pop_back();
+			continue;
 		}
 		OrderRequest cancelRequest{};
 		cancelRequest.intent = intent;
-		memcpy(cancelRequest.clientOrderId, id.c_str(), id.size() + 1);
+		memcpy(cancelRequest.clientOrderId, ids[i].c_str(), ids[i].size() + 1);
 		if (!sendQueue.try_push(cancelRequest)) {
 			std::cout << "send queue is full.\n";
 		}
