@@ -12,6 +12,7 @@ constexpr double EPSILON = 1e-9;
 struct Order {
 	Side side;
 	OrderState state = OrderState::PENDING_NEW;
+	bool cancelRequested = false;
 	double price;
 	double volume;
 	double filledVolume = 0;
@@ -32,6 +33,7 @@ struct OrderRequest {
 };
 
 struct OrderUpdate {
+	Side side;
 	OrderState newState;
 	double filledPrice;
 	double totalFilledVolume;

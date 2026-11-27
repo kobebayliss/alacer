@@ -20,6 +20,12 @@ static std::optional<OrderState> parseState(std::string_view s) {
 	return std::nullopt;
 }
 
+static std::optional<Side> parseSide(std::string_view s) {
+	if (s == "BUY") return Side::BUY;
+	if (s == "SELL") return Side::SELL;
+	return std::nullopt;
+}
+
 namespace EventHandler {
 	void handleDepthUpdate(const ix::WebSocketMessagePtr& msg, SPSCQueue<RawMessage, CAPACITY>& eventQueue) {
 		if (msg->type != ix::WebSocketMessageType::Message) {
@@ -45,7 +51,8 @@ namespace EventHandler {
 		if (!eventDetails.HasMember("e") || std::string_view(eventDetails["e"].GetString()) != "executionReport") return;
 
 		OrderUpdate u{};
-		const rapidjson::Value& clientOrderId = eventDetails["c"];
+		const rapidjson::Value& origId = eventDetails["C"];
+		const rapidjson::Value& clientOrderId = (origId.IsString() && origId.GetStringLength() > 0) ? origId : eventDetails["c"];
 		uint32_t n;
 		if (CLIENT_ORDER_ID_LENGTH - 1 <= clientOrderId.GetStringLength()) {
 			n = CLIENT_ORDER_ID_LENGTH - 1;
@@ -53,11 +60,13 @@ namespace EventHandler {
 			n = clientOrderId.GetStringLength();
 		}
 		memcpy(u.clientOrderId, clientOrderId.GetString(), n);
+		auto side = parseSide(eventDetails["S"].GetString());
 		auto state = parseState(eventDetails["X"].GetString());
-		if (!state) {
-			std::cout << "UNKNOWN ORDER STATUS: " << eventDetails["X"].GetString() << '\n';
+		if (!side || !state) {
+			std::cout << "UNKNOWN EVENT" << u.clientOrderId << '\n';
 			return;
 		}
+		u.side = *side;
 		u.newState = *state;
 		u.filledPrice = std::stod(eventDetails["L"].GetString());
 		u.totalFilledVolume = std::stod(eventDetails["z"].GetString());

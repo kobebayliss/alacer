@@ -1,4 +1,5 @@
 #include <atomic>
+#include <array>
 #include <cpr/cpr.h>
 #include <cstring>
 #include <fstream>
@@ -18,8 +19,7 @@ namespace {
 		double realizedPnl = 0;
 	};
 	Position position;
-	std::unordered_map<std::string, Order> orders;
-	std::array<std::vector<std::string>, 2> orderIdsBySide; // [buy order ids], [sell order ids]
+	std::array<std::unordered_map<std::string, Order>, 2> orders; // index 0: buys, 1: sells
 	std::ofstream positionLog;
 }
 
@@ -85,8 +85,9 @@ static void applyFillToPos(Side side, double fillQty, double price) {
 }
 
 static void applyUpdate(const OrderUpdate& update) {
-	auto it = orders.find(update.clientOrderId);
-	if (it == orders.end()) return;  // unknown id
+	std::unordered_map<std::string, Order>& ordersMap = orders[static_cast<size_t>(update.side)];
+	auto it = ordersMap.find(update.clientOrderId);
+	if (it == ordersMap.end()) return;  // unknown id
 	Order& order = it->second;
 	OrderState& currentState = order.state;
 	if (currentState == OrderState::FILLED || currentState == OrderState::CANCELED || currentState == OrderState::REJECTED || currentState == OrderState::EXPIRED) return;
@@ -101,22 +102,21 @@ static void applyUpdate(const OrderUpdate& update) {
 		adjustWorkingQty(order.side, order.volume - order.filledVolume);
 	}
 	logPosition(update, order, fillQty);
-	if (order.state >= OrderState::FILLED) orders.erase(it);
+	if (order.state >= OrderState::FILLED) ordersMap.erase(it);
 }
 
-void sendOrder(const OrderIntent& intent, std::atomic<PositionView>& positionView, SPSCQueue<OrderRequest, CAPACITY>& sendQueue) {
+static void sendOrder(const OrderIntent& intent, std::atomic<PositionView>& positionView, SPSCQueue<OrderRequest, CAPACITY>& sendQueue) {
 	// decide if we still want to execute order
 	// hands off order details to network sender thread to not block order manager
 	// construct actual uuid first
 	OrderRequest request{};
 	std::string id = generateRequestId();
 	uint64_t timestamp = getTimestampMillis();
-	orders.try_emplace(id, intent.side, OrderState::PENDING_NEW, intent.price, intent.volume, 0, timestamp, timestamp);
+	std::unordered_map<std::string, Order>& ordersMap = orders[static_cast<size_t>(intent.side)];
+	ordersMap.try_emplace(id, intent.side, OrderState::PENDING_NEW, false, intent.price, intent.volume, 0, timestamp, timestamp);
 	if (intent.side == Side::BUY) {
-		orderIdsBySide[0].emplace_back(id);
 		position.workingBuyQty += intent.volume;
 	} else {
-		orderIdsBySide[1].emplace_back(id);
 		position.workingSellQty += intent.volume;
 	}
 	positionView.store(PositionView{position.quantityHeld, position.workingBuyQty, position.workingSellQty}, std::memory_order_release);
@@ -127,31 +127,35 @@ void sendOrder(const OrderIntent& intent, std::atomic<PositionView>& positionVie
 	}
 }
 
-void cancelOpenOrders(OrderIntent intent, SPSCQueue<OrderRequest, CAPACITY>& sendQueue) {
+static void cancelOpenOrders(OrderIntent intent, SPSCQueue<OrderRequest, CAPACITY>& sendQueue) {
 	if ((intent.side == Side::BUY && position.workingBuyQty < EPSILON) || (intent.side == Side::SELL && position.workingSellQty < EPSILON)) return;
 	if ((intent.side == Side::BUY && position.workingSellQty < EPSILON) || (intent.side == Side::SELL && position.workingBuyQty < EPSILON)) {
 		OrderIntent cancelAllIntent{0, 0, IntentType::CANCEL_ALL, Side::BUY}; // side here is a placeholder
 		OrderRequest cancelAllRequest{cancelAllIntent, {}};
 		if (!sendQueue.try_push(cancelAllRequest)) {
 			std::cout << "send queue is full.\n";
+			return;
+		}
+		for (auto& [id, order] : orders[0]) {
+			order.cancelRequested = true;
+		}
+		for (auto& [id, order] : orders[1]) {
+			order.cancelRequested = true;
 		}
 		return;
 	}
-	std::vector<std::string>& ids = orderIdsBySide[static_cast<size_t>(intent.side)];
-	for (size_t i = ids.size(); i-- > 0;) {
-		auto it = orders.find(ids[i]);
-		if (it == orders.end()) {
-			// lazy cleanup of orderIdsBySide
-			ids[i] = std::move(ids.back());
-			ids.pop_back();
-			continue;
-		}
+	std::unordered_map<std::string, Order>& ordersMap = orders[static_cast<size_t>(intent.side)];
+	for (auto& [id, order] : ordersMap) {
+		bool& cancelRequested = order.cancelRequested;
+		if (cancelRequested) continue;
 		OrderRequest cancelRequest{};
 		cancelRequest.intent = intent;
-		memcpy(cancelRequest.clientOrderId, ids[i].c_str(), ids[i].size() + 1);
+		memcpy(cancelRequest.clientOrderId, id.c_str(), id.size() + 1);
 		if (!sendQueue.try_push(cancelRequest)) {
 			std::cout << "send queue is full.\n";
+			return;
 		}
+		cancelRequested = true;
 	}
 }
 

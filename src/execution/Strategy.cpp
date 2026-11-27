@@ -16,7 +16,7 @@ constexpr double MIN_ORDER_QTY = 0.001;
 enum class Regime : uint8_t { BULLISH, NEUTRAL, BEARISH };
 
 void strategyLoop(OrderBook &ob, SPSCQueue<OrderIntent, CAPACITY>& intentQueue, std::atomic<PositionView>& positionView, std::atomic<bool> &running) {
-	Regime regime;
+	Regime regime = Regime::NEUTRAL;
 	while (running) {
 		ob.updated.wait(false, std::memory_order_acquire);
 		ob.updated.store(false, std::memory_order_relaxed);
@@ -38,19 +38,23 @@ void strategyLoop(OrderBook &ob, SPSCQueue<OrderIntent, CAPACITY>& intentQueue, 
 			const double signalStrength = (imbalance - IMB_THRESHOLD) / (1.0 - IMB_THRESHOLD);
 			targetPosition = MAX_POSITION * signalStrength;
 			if (regime != Regime::BULLISH) {
-				OrderIntent cancelSellOrders{0, 0, IntentType::CANCEL, Side::SELL};
-				if (!intentQueue.try_push(cancelSellOrders)) {
-					std::cout << "QUEUE FULL: DROPPING ORDER.\n";
-				} 
+				if (snapshot.workingSellQty > EPSILON) {
+					OrderIntent cancelSellOrders{0, 0, IntentType::CANCEL, Side::SELL};
+					if (!intentQueue.try_push(cancelSellOrders)) {
+						std::cout << "QUEUE FULL: DROPPING ORDER.\n";
+					} 
+				}
 			}
 			regime = Regime::BULLISH;
 		} else if (imbalance < -IMB_THRESHOLD) {
 			targetPosition = 0;
 			if (regime != Regime::BEARISH) {
-				OrderIntent cancelBuyOrders{0, 0, IntentType::CANCEL, Side::BUY};
-				if (!intentQueue.try_push(cancelBuyOrders)) {
-					std::cout << "QUEUE FULL: DROPPING ORDER.\n";
-				} 
+				if (snapshot.workingBuyQty > EPSILON) {
+					OrderIntent cancelBuyOrders{0, 0, IntentType::CANCEL, Side::BUY};
+					if (!intentQueue.try_push(cancelBuyOrders)) {
+						std::cout << "QUEUE FULL: DROPPING ORDER.\n";
+					} 
+				}
 			}
 			regime = Regime::BEARISH;
 		} else {
