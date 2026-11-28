@@ -65,7 +65,7 @@ void strategyLoop(OrderBook &ob, SPSCQueue<OrderIntent, CAPACITY>& intentQueue, 
 		const double exposure = snapshot.quantityHeld + snapshot.workingBuyQty;
 		const double diff = targetPosition - exposure;
 		if (diff > MIN_DIFF) {
-			const double price = top_k_asks.first[0].first;
+			const double price = top_k_bids.first[0].first;
 			// determines qty to buy whilst ensuring we dont walk the book by comparing top ask qty
 			double qty = std::min({diff, top_k_asks.first[0].second * LIQ_FRACTION});
 			qty = std::floor(qty / QTY_STEP + EPSILON) * QTY_STEP;
@@ -76,7 +76,7 @@ void strategyLoop(OrderBook &ob, SPSCQueue<OrderIntent, CAPACITY>& intentQueue, 
 			} 
 		} else if (diff < -MIN_DIFF) {
 			const double sellable = snapshot.quantityHeld - snapshot.workingSellQty;
-			const double price = top_k_bids.first[0].first;
+			const double price = top_k_asks.first[0].first;
 			// determines qty to sell whilst ensuring we dont walk the book by comparing top bid qty
 			double qty = std::min({-diff, sellable, top_k_bids.first[0].second * LIQ_FRACTION});
 			qty = std::floor(qty / QTY_STEP + EPSILON) * QTY_STEP;
